@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Character } from '@/types/character';
+import CharacterAvatar from '@/components/game/CharacterAvatar';
 
 export default function AdminMissingDataPage() {
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
@@ -214,10 +215,11 @@ export default function AdminMissingDataPage() {
               return (
                 <div key={c.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col justify-between space-y-4 shadow-md hover:border-slate-700 transition">
                   <div className="flex items-start space-x-3">
-                    <img
-                      src={c.image_url || 'https://via.placeholder.com/80?text=OP'}
-                      alt={c.name}
-                      className="w-12 h-12 rounded-lg object-cover border border-slate-700 bg-slate-950 shrink-0"
+                    <CharacterAvatar
+                      src={c.image_url}
+                      name={c.name}
+                      size="lg"
+                      className="border-slate-700"
                     />
                     <div className="min-w-0 flex-1">
                       <div className="font-bold text-slate-100 text-base truncate">{c.name}</div>
