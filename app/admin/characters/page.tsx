@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Search, Filter, Edit3, CheckCircle2, AlertTriangle, HelpCircle, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Character } from '@/types/character';
+import CharacterAvatar from '@/components/game/CharacterAvatar';
 
 export default function AdminCharactersPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
@@ -199,10 +200,10 @@ export default function AdminCharactersPage() {
                   <tr key={c.id} className="hover:bg-slate-800/40 transition">
                     <td className="p-4">
                       <div className="flex items-center space-x-3">
-                        <img
-                          src={c.image_url || 'https://via.placeholder.com/80?text=OP'}
-                          alt={c.name}
-                          className="w-10 h-10 rounded-lg object-cover border border-amber-600/30 bg-slate-950"
+                        <CharacterAvatar
+                          src={c.image_url}
+                          name={c.name}
+                          size="md"
                         />
                         <div>
                           <div className="font-bold text-slate-100 text-sm">{c.name}</div>

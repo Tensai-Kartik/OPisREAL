@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Loader2 } from 'lucide-react';
+import CharacterAvatar from './CharacterAvatar';
 
 interface SearchResult {
   id: string;
@@ -155,10 +156,10 @@ export default function CharacterSearchInput({
                   } ${isAlreadyGuessed ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   <div className="flex items-center space-x-3">
-                    <img
-                      src={item.image_url || 'https://via.placeholder.com/80?text=OP'}
-                      alt={item.name}
-                      className="w-10 h-10 rounded-lg object-cover border border-amber-600/40 bg-slate-800"
+                    <CharacterAvatar
+                      src={item.image_url}
+                      name={item.name}
+                      size="md"
                     />
                     <div>
                       <div className={`text-sm ${isDark ? 'font-extrabold text-slate-100' : 'font-extrabold text-slate-900'}`}>

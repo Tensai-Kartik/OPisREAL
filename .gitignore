@@ -46,3 +46,6 @@ next-env.d.ts
 
 # media hosted on Supabase Storage CDN
 /public/backgrounds/
+/public/compressed_bg/
+
+

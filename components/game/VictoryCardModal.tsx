@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Character } from '@/types/character';
 import { RefreshCw, Sparkles, Flag } from 'lucide-react';
+import CharacterAvatar from './CharacterAvatar';
 
 interface VictoryCardModalProps {
   character: Character;
@@ -55,11 +56,12 @@ export default function VictoryCardModal({
         </p>
 
         {/* Character Portrait & Main Name */}
-        <div className="relative w-28 h-28 sm:w-32 sm:h-32 mx-auto mb-2 rounded-xl overflow-hidden border-2 border-amber-500/60 shadow-lg bg-slate-900">
-          <img
-            src={character.image_url || 'https://via.placeholder.com/200?text=OP'}
-            alt={character.name}
-            className="w-full h-full object-cover object-center"
+        <div className="flex justify-center mb-2">
+          <CharacterAvatar
+            src={character.image_url}
+            name={character.name}
+            size="xl"
+            className="border-2 border-amber-500/60 shadow-lg"
           />
         </div>
 

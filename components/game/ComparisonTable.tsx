@@ -3,6 +3,7 @@
 import { GuessComparison } from '@/types/game';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { HakiBadgeList } from './HakiSymbols';
+import CharacterAvatar from './CharacterAvatar';
 
 interface ComparisonTableProps {
   guesses: GuessComparison[];
@@ -159,10 +160,11 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
                   <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${
                     isDark ? 'bg-slate-900 border-amber-600/40 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
                   }`}>
-                    <img
-                      src={g.character.image_url || 'https://via.placeholder.com/80?text=OP'}
-                      alt={g.character.name}
-                      className="w-10 h-10 rounded-lg object-cover border border-amber-600/40 bg-slate-950 mb-1"
+                    <CharacterAvatar
+                      src={g.character.image_url}
+                      name={g.character.name}
+                      size="md"
+                      className="mb-1"
                     />
                     <div className="font-extrabold text-[11px] leading-tight text-center max-w-[100px] truncate">
                       {g.character.name}

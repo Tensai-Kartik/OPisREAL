@@ -33,7 +33,6 @@
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) + Custom Design Tokens
 - **Database & Storage**: [Supabase](https://supabase.com/) (PostgreSQL + Storage Buckets)
 - **Icons & Animations**: [Lucide React](https://lucide.dev/), [Canvas Confetti](https://github.com/catdad/canvas-confetti)
-- **Deployment**: [Vercel](https://vercel.com/)
 
 ---
 
@@ -66,18 +65,6 @@ ADMIN_PASSWORD=your-admin-password
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) in your browser.
-
----
-
-## 🚢 Deployment to Vercel
-
-1. Push your code to GitHub:
-```bash
-git push origin main
-```
-2. Import the repository in [Vercel](https://vercel.com/new).
-3. Set the environment variables in the Vercel dashboard.
-4. Click **Deploy**!
 
 ---
 

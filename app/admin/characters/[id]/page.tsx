@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, ShieldCheck, Eye, Plus, Trash2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Character, CharacterFieldEvidence, HakiType } from '@/types/character';
+import CharacterAvatar from '@/components/game/CharacterAvatar';
 
 export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -228,14 +229,28 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                 />
               </div>
-              <div>
-                <label className="block text-slate-400 font-semibold mb-1">Image URL</label>
-                <input
-                  type="text"
-                  value={character.image_url || ''}
-                  onChange={(e) => setCharacter({ ...character, image_url: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
-                />
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block text-slate-400 font-semibold mb-1">Image URL (Portrait / Avatar)</label>
+                <div className="flex items-center space-x-3">
+                  <CharacterAvatar
+                    src={character.image_url}
+                    name={character.name}
+                    size="lg"
+                    className="border border-amber-600/50"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <input
+                      type="text"
+                      value={character.image_url || ''}
+                      onChange={(e) => setCharacter({ ...character, image_url: e.target.value })}
+                      placeholder="https://cdn.myanimelist.net/images/characters/... or https://i.imgur.com/..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500 text-xs"
+                    />
+                    <p className="text-[11px] text-slate-400">
+                      💡 Direct HTTPS links from <span className="text-amber-400 font-medium">MyAnimeList</span>, <span className="text-amber-400 font-medium">Supabase Storage</span>, or <span className="text-amber-400 font-medium">Imgur</span> work best.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
