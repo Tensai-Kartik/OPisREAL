@@ -4,7 +4,7 @@ import path from 'path';
 import WebSocket from 'ws';
 
 export function getEnvVar(key: string): string {
-  if (process.env[key]) return process.env[key]!;
+  if (process.env[key]) return process.env[key]!.trim();
   try {
     const envPath = path.resolve(process.cwd(), '.env.local');
     if (fs.existsSync(envPath)) {
@@ -13,7 +13,8 @@ export function getEnvVar(key: string): string {
       for (const line of lines) {
         const parts = line.split('=');
         if (parts.length >= 2 && parts[0].trim() === key) {
-          return parts.slice(1).join('=').trim();
+          const val = parts.slice(1).join('=').trim();
+          return val.replace(/^["']|["']$/g, '');
         }
       }
     }
