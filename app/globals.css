@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-100 antialiased font-sans selection:bg-amber-500 selection:text-slate-950;
+  }
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #ffd000 0%, #ffb703 50%, #fb8500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.parchment-panel {
+  background: radial-gradient(circle at top left, rgba(30, 41, 59, 0.88), rgba(15, 23, 42, 0.94));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Original Clean Light Theme */
+.light-theme .parchment-panel {
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.96));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+.light-theme body {
+  background-color: #f8fafc;
+  color: #0f172a;
+}
+
+/* High-Brightness Golden Yellow Button (Preserving Original Golden Hue) */
+.gold-button {
+  background: linear-gradient(180deg, #ffd000 0%, #ffb703 50%, #fb8500 100%);
+  color: #0b1120;
+  border: 1px solid rgba(255, 230, 100, 0.6);
+  box-shadow: 0 0 16px rgba(255, 183, 3, 0.55), 0 4px 12px rgba(251, 133, 0, 0.35);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.gold-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffe033 0%, #ffc300 50%, #ff9500 100%);
+  transform: translateY(-1.5px) scale(1.02);
+  box-shadow: 0 0 24px rgba(255, 195, 0, 0.8), 0 6px 18px rgba(255, 149, 0, 0.5);
+}
+
+.gold-button:active:not(:disabled) {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

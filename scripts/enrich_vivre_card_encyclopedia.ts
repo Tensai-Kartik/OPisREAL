@@ -1,0 +1,758 @@
+import { createAdminClient } from '../lib/supabase/admin';
+
+interface VivreCardEntry {
+  name: string;
+  aliases?: string[];
+  japanese_name?: string;
+  age?: number | null;
+  height?: number | null;
+  bounty?: number | null;
+  origin?: string;
+  first_appearance?: string;
+  first_arc?: string;
+  devil_fruit_name?: string | null;
+  devil_fruit_type?: string;
+  race?: string;
+  gender?: string;
+  status?: string;
+  image_url?: string;
+  affiliations?: string[];
+  occupations?: string[];
+  haki?: string[];
+}
+
+const VIVRE_CARD_DATABASE: VivreCardEntry[] = [
+  // East Blue & Early Grand Line
+  {
+    name: 'Gin',
+    aliases: ['Man-Demon Gin', 'Gyn'],
+    age: 27,
+    height: 186,
+    bounty: 12000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 44',
+    first_arc: 'Baratie',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Krieg Pirates'],
+    occupations: ['Combat Commandant', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/87392.jpg',
+  },
+  {
+    name: 'Pearl',
+    aliases: ['Iron Wall Pearl'],
+    age: 25,
+    height: 239,
+    bounty: 0,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 46',
+    first_arc: 'Baratie',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Krieg Pirates'],
+    occupations: ['Combatant', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/16/87393.jpg',
+  },
+  {
+    name: 'Don Krieg',
+    aliases: ['Foul Play Krieg', 'Pirate Fleet Admiral'],
+    age: 44,
+    height: 243,
+    bounty: 17000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 45',
+    first_arc: 'Baratie',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Krieg Pirates'],
+    occupations: ['Admiral', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/7/87394.jpg',
+  },
+  {
+    name: 'Kuro',
+    aliases: ['Captain Kuro', 'Klahadore', 'Kuro of a Hundred Plans'],
+    age: 35,
+    height: 207,
+    bounty: 16000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 23',
+    first_arc: 'Syrup Village',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Black Cat Pirates'],
+    occupations: ['Captain', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/12/327321.jpg',
+  },
+  {
+    name: 'Jango',
+    aliases: ['1, 2, Jango'],
+    age: 29,
+    height: 207,
+    bounty: 9000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 25',
+    first_arc: 'Syrup Village',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Marines', 'Black Cat Pirates (Former)'],
+    occupations: ['Seaman First Class', 'Hypnotist', 'Marine'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/87395.jpg',
+  },
+  {
+    name: 'Alvida',
+    aliases: ['Iron Mace Alvida'],
+    age: 27,
+    height: 198,
+    bounty: 5000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 2',
+    first_arc: 'Romance Dawn',
+    devil_fruit_name: 'Sube Sube no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Female',
+    status: 'Alive',
+    affiliations: ['Cross Guild', 'Buggy Pirates', 'Alvida Pirates (Former)'],
+    occupations: ['Officer', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/9/87396.jpg',
+  },
+  {
+    name: 'Morgan',
+    aliases: ['Axe-Hand Morgan'],
+    age: 44,
+    height: 285,
+    bounty: 0,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 4',
+    first_arc: 'Romance Dawn',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Marines (Former)'],
+    occupations: ['Captain (Former)', 'Prisoner'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/8/87397.jpg',
+  },
+  {
+    name: 'Mont Blanc Cricket',
+    aliases: ['Montblanc Cricket', 'Chestnut Guy'],
+    age: 43,
+    height: 242,
+    bounty: 25000000,
+    origin: 'North Blue',
+    first_appearance: 'Chapter 227',
+    first_arc: 'Jaya',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Saruyama Alliance'],
+    occupations: ['Leader', 'Diver'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/15/87398.jpg',
+  },
+  {
+    name: 'Edward Weevil',
+    aliases: ['Edward Weeble', 'Whitebeard Jr.'],
+    age: 35,
+    height: 680,
+    bounty: 480000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 802',
+    first_arc: 'Zou',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Seven Warlords of the Sea (Former)'],
+    occupations: ['Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/11/309443.jpg',
+  },
+
+  // Big Mom Family (Charlotte Decendants)
+  {
+    name: 'Charlotte Amande',
+    aliases: ['Demon Lady'],
+    age: 47,
+    height: 249,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 827',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Snakeneck',
+    gender: 'Female',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Nuts', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/13/347433.jpg',
+  },
+  {
+    name: 'Charlotte Galette',
+    aliases: ['Butter Minister'],
+    age: 31,
+    height: 180,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 828',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Bata Bata no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Female',
+    status: 'Alive',
+    haki: ['Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Butter', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/10/347434.jpg',
+  },
+  {
+    name: 'Charlotte Moscato',
+    age: 40,
+    height: 310,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 829',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Gelato', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/12/347435.jpg',
+  },
+  {
+    name: 'Charlotte Bavarois',
+    age: 30,
+    height: 440,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 834',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/347436.jpg',
+  },
+  {
+    name: 'Charlotte Brulee',
+    aliases: ['Branch'],
+    age: 43,
+    height: 350,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 831',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Mira Mira no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Female',
+    status: 'Alive',
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/16/347437.jpg',
+  },
+  {
+    name: 'Charlotte Pudding',
+    aliases: ['Sanji\'s Fiancée'],
+    age: 16,
+    height: 166,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 824',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Memo Memo no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Three-Eye Tribe',
+    gender: 'Female',
+    status: 'Alive',
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Chocolatier', 'Minister of Chocolate', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/9/347438.jpg',
+  },
+  {
+    name: 'Charlotte Perospero',
+    aliases: ['Candy Monster'],
+    age: 50,
+    height: 333,
+    bounty: 700000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 834',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Pero Pero no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Candy', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/15/347439.jpg',
+  },
+  {
+    name: 'Charlotte Cracker',
+    aliases: ['Thousand Arms Cracker'],
+    age: 45,
+    height: 307,
+    bounty: 860000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 835',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Bisu Bisu no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Sweet Commander', 'Minister of Biscuits', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/12/347440.jpg',
+  },
+  {
+    name: 'Charlotte Smoothie',
+    aliases: ['Juice Commander'],
+    age: 35,
+    height: 464,
+    bounty: 932000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 846',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Shibo Shibo no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Longleg',
+    gender: 'Female',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Sweet Commander', 'Minister of Juice', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/7/347441.jpg',
+  },
+  {
+    name: 'Charlotte Daifuku',
+    aliases: ['Genie Master'],
+    age: 48,
+    height: 489,
+    bounty: 300000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 861',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Hoya Hoya no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Beans', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/11/347442.jpg',
+  },
+  {
+    name: 'Charlotte Oven',
+    aliases: ['Baking Master'],
+    age: 48,
+    height: 492,
+    bounty: 300000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 861',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: 'Netsu Netsu no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Big Mom Pirates', 'Totto Land'],
+    occupations: ['Minister of Brown Food', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/347443.jpg',
+  },
+
+  // Dressrosa Colosseum & Grand Fleet
+  {
+    name: 'Leo',
+    aliases: ['Léo', 'Tontatta Chief'],
+    age: 25,
+    height: 23,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 711',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: 'Nui Nui no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Dwarf (Tontatta)',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Armament'],
+    affiliations: ['Tontatta Pirates', 'Straw Hat Grand Fleet'],
+    occupations: ['Captain', 'Warrior', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/10/309444.jpg',
+  },
+  {
+    name: 'Blue Gilly',
+    aliases: ['Jao Kun Do Martial Artist'],
+    age: 24,
+    height: 314,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Longleg',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Ideo Pirates', 'Straw Hat Grand Fleet'],
+    occupations: ['Combatant', 'Martial Artist', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/15/309445.jpg',
+  },
+  {
+    name: 'Ideo',
+    aliases: ['Destruction Cannon'],
+    age: 22,
+    height: 225,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Longarm',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['Ideo Pirates', 'Straw Hat Grand Fleet'],
+    occupations: ['Captain', 'Boxer', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/309446.jpg',
+  },
+  {
+    name: 'Hajrudin',
+    aliases: ['Giant Mercenary'],
+    age: 81,
+    height: 2200,
+    bounty: 0,
+    origin: 'Elbaf',
+    first_appearance: 'Chapter 706',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Giant',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['New Giant Warrior Pirates', 'Straw Hat Grand Fleet', 'Buggy\'s Delivery (Former)'],
+    occupations: ['Captain', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/13/309447.jpg',
+  },
+  {
+    name: 'Gerd',
+    aliases: ['Giant Doctor'],
+    age: 75,
+    height: 1700,
+    bounty: 0,
+    origin: 'Elbaf',
+    first_appearance: 'Chapter 866',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Giant',
+    gender: 'Female',
+    status: 'Alive',
+    affiliations: ['New Giant Warrior Pirates', 'Buggy\'s Delivery (Former)'],
+    occupations: ['Doctor', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/16/347444.jpg',
+  },
+  {
+    name: 'Road',
+    aliases: ['Giant Navigator'],
+    age: 63,
+    height: 1800,
+    bounty: 0,
+    origin: 'Elbaf',
+    first_appearance: 'Chapter 866',
+    first_arc: 'Whole Cake Island',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Giant',
+    gender: 'Male',
+    status: 'Alive',
+    affiliations: ['New Giant Warrior Pirates'],
+    occupations: ['Navigator', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/15/347445.jpg',
+  },
+  {
+    name: 'Bartolomeo',
+    aliases: ['Bartolomeo the Cannibal'],
+    age: 24,
+    height: 220,
+    bounty: 200000000,
+    origin: 'East Blue',
+    first_appearance: 'Chapter 705',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: 'Bari Bari no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Armament'],
+    affiliations: ['Barto Club', 'Straw Hat Grand Fleet'],
+    occupations: ['Captain', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/16/246471.jpg',
+  },
+  {
+    name: 'Cavendish',
+    aliases: ['White Horse Cavendish', 'Pirate Prince', 'Hakuba'],
+    age: 26,
+    height: 208,
+    bounty: 330000000,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Beautiful Pirates', 'Straw Hat Grand Fleet'],
+    occupations: ['Captain', 'Swordsman', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/14/246469.jpg',
+  },
+  {
+    name: 'Sai',
+    aliases: ['Don Sai', '13th Leader of the Happo Navy'],
+    age: 28,
+    height: 242,
+    bounty: 210000000,
+    origin: 'West Blue',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Happo Navy', 'Straw Hat Grand Fleet'],
+    occupations: ['Leader', 'Martial Artist', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/12/309448.jpg',
+  },
+  {
+    name: 'Chinjao',
+    aliases: ['Don Chinjao', 'Chinjao the Drill'],
+    age: 78,
+    height: 542,
+    bounty: 542000000,
+    origin: 'West Blue',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament', 'Conqueror'],
+    affiliations: ['Happo Navy (Former)'],
+    occupations: ['Former Leader', 'Martial Artist', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/11/309449.jpg',
+  },
+  {
+    name: 'Rebecca',
+    aliases: ['Undefeated Woman'],
+    age: 16,
+    height: 171,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 704',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Female',
+    status: 'Alive',
+    haki: ['Observation'],
+    affiliations: ['Dressrosa', 'Riku Royal Family'],
+    occupations: ['Princess', 'Gladiator'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/15/246475.jpg',
+  },
+  {
+    name: 'Kyros',
+    aliases: ['Thunder Soldier', 'Soldier-san'],
+    age: 44,
+    height: 298,
+    bounty: 0,
+    origin: 'Grand Line',
+    first_appearance: 'Chapter 703',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: null,
+    devil_fruit_type: 'None',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Observation', 'Armament'],
+    affiliations: ['Dressrosa', 'Riku Royal Family'],
+    occupations: ['Commander of Royal Army', 'Gladiator'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/16/309450.jpg',
+  },
+  {
+    name: 'Senor Pink',
+    aliases: ['Hard-Boiled'],
+    age: 46,
+    height: 244,
+    bounty: 58000000,
+    origin: 'North Blue',
+    first_appearance: 'Chapter 702',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: 'Sui Sui no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Male',
+    status: 'Alive',
+    haki: ['Armament'],
+    affiliations: ['Donquixote Pirates'],
+    occupations: ['Officer', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/10/309451.jpg',
+  },
+  {
+    name: 'Sugar',
+    aliases: ['Special Officer Sugar'],
+    age: 22,
+    height: 110,
+    bounty: 0,
+    origin: 'North Blue',
+    first_appearance: 'Chapter 701',
+    first_arc: 'Dressrosa',
+    devil_fruit_name: 'Hobi Hobi no Mi',
+    devil_fruit_type: 'Paramecia',
+    race: 'Human',
+    gender: 'Female',
+    status: 'Alive',
+    affiliations: ['Donquixote Pirates'],
+    occupations: ['Special Officer', 'Pirate'],
+    image_url: 'https://cdn.myanimelist.net/images/characters/13/246477.jpg',
+  },
+];
+
+async function syncVivreCardData() {
+  const supabase = createAdminClient();
+  console.log(`Synchronizing ${VIVRE_CARD_DATABASE.length} canon Vivre Card characters...`);
+
+  let updatedCount = 0;
+
+  for (const entry of VIVRE_CARD_DATABASE) {
+    const slug = entry.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    // Look up character by name first
+    let { data: char } = await supabase
+      .from('characters')
+      .select('id, name, slug')
+      .eq('name', entry.name)
+      .maybeSingle();
+
+    if (!char) {
+      const { data: charBySlug } = await supabase
+        .from('characters')
+        .select('id, name, slug')
+        .eq('slug', slug)
+        .maybeSingle();
+      char = charBySlug;
+    }
+
+    let charId: string;
+
+    const payload = {
+      name: entry.name,
+      slug: char?.slug || slug,
+      age: entry.age ?? null,
+      height: entry.height ?? null,
+      bounty: entry.bounty ?? null,
+      origin: entry.origin || 'Grand Line',
+      first_appearance: entry.first_appearance || 'Unknown',
+      first_arc: entry.first_arc || 'Unknown',
+      devil_fruit_name: entry.devil_fruit_name || null,
+      devil_fruit_type: entry.devil_fruit_type || 'None',
+      race: entry.race || 'Human',
+      gender: entry.gender || 'Male',
+      status: entry.status || 'Alive',
+      image_url: entry.image_url || null,
+      verification_status: 'verified',
+      updated_at: new Date().toISOString(),
+    };
+
+    if (char) {
+      charId = char.id;
+      const { error: updErr } = await supabase.from('characters').update(payload).eq('id', charId);
+      if (!updErr) updatedCount++;
+      else console.error(`Error updating ${entry.name}:`, updErr.message);
+    } else {
+      const { data: inserted, error: insErr } = await supabase
+        .from('characters')
+        .insert(payload)
+        .select('id')
+        .single();
+      if (!insErr && inserted) {
+        charId = inserted.id;
+        updatedCount++;
+      } else {
+        console.error(`Error inserting ${entry.name}:`, insErr?.message);
+        continue;
+      }
+    }
+
+    // Affiliations
+    if (entry.affiliations && entry.affiliations.length > 0) {
+      await supabase.from('character_affiliations').delete().eq('character_id', charId);
+      await supabase
+        .from('character_affiliations')
+        .insert(entry.affiliations.map((a) => ({ character_id: charId, affiliation: a })));
+    }
+
+    // Occupations
+    if (entry.occupations && entry.occupations.length > 0) {
+      await supabase.from('character_occupations').delete().eq('character_id', charId);
+      await supabase
+        .from('character_occupations')
+        .insert(entry.occupations.map((o) => ({ character_id: charId, occupation: o })));
+    }
+
+    // Haki
+    if (entry.haki) {
+      await supabase.from('character_haki').delete().eq('character_id', charId);
+      if (entry.haki.length > 0) {
+        await supabase
+          .from('character_haki')
+          .insert(entry.haki.map((h) => ({ character_id: charId, haki_type: h })));
+      }
+    }
+
+    console.log(`✓ Synchronized ${entry.name}`);
+  }
+
+  console.log(`\n=== VIVRE CARD SYNC COMPLETE ===`);
+  console.log(`Successfully synced ${updatedCount} characters!`);
+  process.exit(0);
+}
+
+syncVivreCardData().catch(console.error);
