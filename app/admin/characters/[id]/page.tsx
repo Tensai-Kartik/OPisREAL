@@ -3,9 +3,131 @@
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, ShieldCheck, Eye, Plus, Trash2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  ShieldCheck,
+  Eye,
+  Plus,
+  X,
+  Trash2,
+  CheckCircle2,
+  AlertTriangle,
+  Loader2,
+  Tag,
+  Users,
+  Briefcase,
+  Compass,
+  BookOpen,
+  Sparkles,
+} from 'lucide-react';
 import { Character, CharacterFieldEvidence, HakiType } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
+
+const SUGGESTED_AFFILIATIONS = [
+  'Straw Hat Pirates',
+  'Marines',
+  'Revolutionary Army',
+  'Cross Guild',
+  'Red Hair Pirates',
+  'Blackbeard Pirates',
+  'Whitebeard Pirates',
+  'Beasts Pirates',
+  'Big Mom Pirates',
+  'Heart Pirates',
+  'Kid Pirates',
+  'Roger Pirates',
+  'Seven Warlords of the Sea',
+  'CP0',
+  'CP9',
+  'Baroque Works',
+  'Sun Pirates',
+  'Kozuki Clan',
+  'Kuja Pirates',
+  'Donquixote Pirates',
+];
+
+const SUGGESTED_OCCUPATIONS = [
+  'Captain',
+  'Swordsman',
+  'Combatant',
+  'Navigator',
+  'Sniper',
+  'Cook',
+  'Doctor',
+  'Archaeologist',
+  'Shipwright',
+  'Musician',
+  'Helmsman',
+  'Fleet Admiral',
+  'Admiral',
+  'Vice Admiral',
+  'Rear Admiral',
+  'Captain (Marine)',
+  'Marine',
+  'Shogun',
+  'Samurai',
+  'Ninja',
+  'Scientist',
+  'King',
+  'Queen',
+  'Princess',
+  'Emperor',
+  'Assassin',
+  'Thief',
+  'Bounty Hunter',
+];
+
+const SUGGESTED_ORIGINS = [
+  'East Blue',
+  'West Blue',
+  'North Blue',
+  'South Blue',
+  'Grand Line',
+  'Red Line',
+  'Fish-Man Island',
+  'Sky Island',
+  'Wano Country',
+  'Zou',
+  'Elbaf',
+  'Unknown',
+];
+
+const SUGGESTED_ARCS = [
+  'Romance Dawn',
+  'Orange Town',
+  'Syrup Village',
+  'Baratie',
+  'Arlong Park',
+  'Loguetown',
+  'Reverse Mountain',
+  'Whiskey Peak',
+  'Little Garden',
+  'Drum Island',
+  'Alabasta',
+  'Jaya',
+  'Skypiea',
+  'Long Ring Long Land',
+  'Water 7',
+  'Enies Lobby',
+  'Post-Enies Lobby',
+  'Thriller Bark',
+  'Sabaody Archipelago',
+  'Amazon Lily',
+  'Impel Down',
+  'Marineford',
+  'Post-War',
+  'Return to Sabaody',
+  'Fish-Man Island',
+  'Punk Hazard',
+  'Dressrosa',
+  'Zou',
+  'Whole Cake Island',
+  'Levely',
+  'Wano Country',
+  'Egghead',
+  'Elbaf',
+];
 
 export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -36,12 +158,28 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       .then((data) => {
         if (data.error) setErrorMsg(data.error);
         else {
-          setCharacter(data.character);
+          const char = data.character;
+          // Ensure alias is synced
+          if (!char.alias && char.romanized_name) {
+            char.alias = char.romanized_name;
+          }
+          setCharacter(char);
           setEvidence(data.evidence || []);
           setAffiliations(data.affiliations || []);
           setOccupations(data.occupations || []);
           setHakiList(data.haki || []);
-          setAliases(data.aliases || []);
+
+          // Format aliases from table or character.alias string
+          const loadedAliases = data.aliases || [];
+          if (loadedAliases.length === 0 && char.alias) {
+            const parsed = char.alias
+              .split(/,\s*/)
+              .filter(Boolean)
+              .map((a: string) => ({ alias: a.trim(), alias_type: 'alias' }));
+            setAliases(parsed);
+          } else {
+            setAliases(loadedAliases);
+          }
         }
       })
       .catch(() => setErrorMsg('Failed to fetch character details.'))
@@ -75,8 +213,13 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
     setIsSaving(true);
     setSaveSuccess(false);
 
+    // Build the consolidated alias string
+    const aliasString = aliases.map((a) => a.alias).filter(Boolean).join(', ');
+
     const verifiedPayload = {
       ...character,
+      alias: aliasString || character.alias || null,
+      romanized_name: aliasString || character.alias || null,
       verification_status: 'verified' as const,
       is_active: true,
       is_canon: true,
@@ -116,6 +259,60 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
     }
   };
 
+  // Helper functions for tags
+  const addAlias = (aliasText: string) => {
+    const trimmed = aliasText.trim();
+    if (!trimmed) return;
+    if (!aliases.some((a) => a.alias.toLowerCase() === trimmed.toLowerCase())) {
+      const updated = [...aliases, { alias: trimmed, alias_type: 'alias' }];
+      setAliases(updated);
+      if (character) {
+        setCharacter({
+          ...character,
+          alias: updated.map((a) => a.alias).join(', '),
+        });
+      }
+    }
+    setNewAlias('');
+  };
+
+  const removeAlias = (index: number) => {
+    const updated = aliases.filter((_, idx) => idx !== index);
+    setAliases(updated);
+    if (character) {
+      setCharacter({
+        ...character,
+        alias: updated.map((a) => a.alias).join(', '),
+      });
+    }
+  };
+
+  const addAffiliation = (aff: string) => {
+    const trimmed = aff.trim();
+    if (!trimmed) return;
+    if (!affiliations.some((a) => a.toLowerCase() === trimmed.toLowerCase())) {
+      setAffiliations([...affiliations, trimmed]);
+    }
+    setNewAffiliation('');
+  };
+
+  const removeAffiliation = (index: number) => {
+    setAffiliations(affiliations.filter((_, idx) => idx !== index));
+  };
+
+  const addOccupation = (occ: string) => {
+    const trimmed = occ.trim();
+    if (!trimmed) return;
+    if (!occupations.some((o) => o.toLowerCase() === trimmed.toLowerCase())) {
+      setOccupations([...occupations, trimmed]);
+    }
+    setNewOccupation('');
+  };
+
+  const removeOccupation = (index: number) => {
+    setOccupations(occupations.filter((_, idx) => idx !== index));
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -138,13 +335,13 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 p-4 border border-slate-800 rounded-xl sticky top-20 z-30 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/95 backdrop-blur-md p-4 border border-slate-800 rounded-xl sticky top-20 z-30 shadow-xl">
         <div className="flex items-center space-x-3">
           <Link
             href="/admin/characters"
-            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 rounded-lg"
+            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 rounded-lg transition"
           >
             <ArrowLeft className="w-4 h-4" />
           </Link>
@@ -155,14 +352,14 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 {character.verification_status}
               </span>
             </h1>
-            <p className="text-xs text-slate-400">Canonical Character Fact Verification & Evidence Inspector</p>
+            <p className="text-xs text-slate-400">Canonical Character Fact & Gameplay Fact Editor</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2.5">
           <button
             onClick={() => setShowEvidence(!showEvidence)}
-            className="px-3.5 py-2 bg-slate-950 border border-amber-600/40 text-amber-400 hover:bg-slate-800 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-slate-950 border border-amber-600/40 text-amber-400 hover:bg-slate-800 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 cursor-pointer transition"
           >
             <Eye className="w-4 h-4" />
             <span>{showEvidence ? 'Hide Sources' : 'Inspect Evidence'}</span>
@@ -178,7 +375,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
           <button
             onClick={handleSave}
             disabled={isSaving || isDeleting}
-            className="px-5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer"
+            className="px-5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             <span>Save Verification</span>
@@ -187,23 +384,24 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       </div>
 
       {saveSuccess && (
-        <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2">
+        <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
           <CheckCircle2 className="w-4 h-4" />
-          <span>Character canonical record updated and verified successfully!</span>
+          <span>Character canonical record & game facts saved successfully!</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Form Fields (2 columns) */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Identity & Images */}
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-              Identity & Image Management
+          {/* Identity & Image Management */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Identity & Portrait</span>
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
-                <label className="block text-slate-400 font-semibold mb-1">Canonical Name</label>
+                <label className="block text-slate-400 font-semibold mb-1">Canonical Name *</label>
                 <input
                   type="text"
                   value={character.name || ''}
@@ -217,16 +415,26 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.japanese_name || ''}
                   onChange={(e) => setCharacter({ ...character, japanese_name: e.target.value })}
+                  placeholder="e.g. ロロノア・ゾロ"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                 />
               </div>
-              <div>
-                <label className="block text-slate-400 font-semibold mb-1">Romanized Name</label>
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block text-slate-400 font-semibold mb-1">Alias / Epithets String (Comma-Separated)</label>
                 <input
                   type="text"
-                  value={character.romanized_name || ''}
-                  onChange={(e) => setCharacter({ ...character, romanized_name: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
+                  value={character.alias || character.romanized_name || ''}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCharacter({ ...character, alias: val, romanized_name: val });
+                    const split = val
+                      .split(/,\s*/)
+                      .filter(Boolean)
+                      .map((a) => ({ alias: a.trim(), alias_type: 'alias' }));
+                    setAliases(split);
+                  }}
+                  placeholder="e.g. Pirate Hunter, King of Hell, Zorojuro, Marimo"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-amber-300 font-semibold focus:border-amber-500"
                 />
               </div>
               <div className="col-span-1 sm:col-span-2">
@@ -236,18 +444,18 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     src={character.image_url}
                     name={character.name}
                     size="lg"
-                    className="border border-amber-600/50"
+                    className="border border-amber-600/50 shrink-0"
                   />
                   <div className="flex-1 space-y-1">
                     <input
                       type="text"
                       value={character.image_url || ''}
                       onChange={(e) => setCharacter({ ...character, image_url: e.target.value })}
-                      placeholder="https://cdn.myanimelist.net/images/characters/... or https://i.imgur.com/..."
+                      placeholder="https://cdn.myanimelist.net/images/characters/..."
                       className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500 text-xs"
                     />
                     <p className="text-[11px] text-slate-400">
-                      💡 Direct HTTPS links from <span className="text-amber-400 font-medium">MyAnimeList</span>, <span className="text-amber-400 font-medium">Supabase Storage</span>, or <span className="text-amber-400 font-medium">Imgur</span> work best.
+                      💡 Direct HTTPS links from MyAnimeList, Supabase Storage, or Imgur work best.
                     </p>
                   </div>
                 </div>
@@ -255,10 +463,318 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
             </div>
           </div>
 
-          {/* Physical & Attributes */}
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
-            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">
-              Physical Attributes & Status
+          {/* Interactive Aliases Tag Editor */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <Tag className="w-4 h-4 text-amber-400" />
+              <span>Aliases & Epithets Manager ({aliases.length})</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Users can search by any of these aliases in the game search bar to guess this character.
+            </p>
+
+            <div className="flex flex-wrap gap-2 min-h-[36px] p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
+              {aliases.length === 0 ? (
+                <span className="text-xs text-slate-500 italic">No individual aliases added yet.</span>
+              ) : (
+                aliases.map((a, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1 bg-amber-950/60 border border-amber-500/40 text-amber-300 rounded-lg text-xs font-bold"
+                  >
+                    <span>&quot;{a.alias}&quot;</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAlias(idx)}
+                      className="text-amber-400/60 hover:text-red-400 ml-1 cursor-pointer"
+                      title="Remove alias"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newAlias}
+                onChange={(e) => setNewAlias(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addAlias(newAlias);
+                  }
+                }}
+                placeholder="Type a new alias and press Enter (e.g. 'King of Hell')..."
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-amber-500"
+              />
+              <button
+                type="button"
+                onClick={() => addAlias(newAlias)}
+                disabled={!newAlias.trim()}
+                className="px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1 disabled:opacity-40 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Affiliations Manager */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <Users className="w-4 h-4 text-amber-400" />
+              <span>Affiliations & Crews ({affiliations.length})</span>
+            </h3>
+
+            <div className="flex flex-wrap gap-2 min-h-[36px] p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
+              {affiliations.length === 0 ? (
+                <span className="text-xs text-slate-500 italic">No affiliations specified.</span>
+              ) : (
+                affiliations.map((aff, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1 bg-sky-950/60 border border-sky-500/40 text-sky-300 rounded-lg text-xs font-bold"
+                  >
+                    <span>{aff}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeAffiliation(idx)}
+                      className="text-sky-400/60 hover:text-red-400 ml-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newAffiliation}
+                onChange={(e) => setNewAffiliation(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addAffiliation(newAffiliation);
+                  }
+                }}
+                placeholder="Type crew or group name (e.g. 'Straw Hat Pirates')..."
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-sky-500"
+              />
+              <button
+                type="button"
+                onClick={() => addAffiliation(newAffiliation)}
+                disabled={!newAffiliation.trim()}
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold uppercase flex items-center space-x-1 disabled:opacity-40 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add</span>
+              </button>
+            </div>
+
+            {/* Quick Suggestions */}
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block mb-1.5">Quick Suggestions:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_AFFILIATIONS.slice(0, 10).map((sugg) => (
+                  <button
+                    key={sugg}
+                    type="button"
+                    onClick={() => addAffiliation(sugg)}
+                    className="text-[10px] px-2 py-0.5 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition cursor-pointer"
+                  >
+                    + {sugg}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Occupations Manager */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <Briefcase className="w-4 h-4 text-amber-400" />
+              <span>Occupations & Roles ({occupations.length})</span>
+            </h3>
+
+            <div className="flex flex-wrap gap-2 min-h-[36px] p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
+              {occupations.length === 0 ? (
+                <span className="text-xs text-slate-500 italic">No occupations specified.</span>
+              ) : (
+                occupations.map((occ, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center space-x-1.5 px-3 py-1 bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 rounded-lg text-xs font-bold"
+                  >
+                    <span>{occ}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeOccupation(idx)}
+                      className="text-emerald-400/60 hover:text-red-400 ml-1 cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newOccupation}
+                onChange={(e) => setNewOccupation(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addOccupation(newOccupation);
+                  }
+                }}
+                placeholder="Type role or job (e.g. 'Swordsman', 'Captain')..."
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-emerald-500"
+              />
+              <button
+                type="button"
+                onClick={() => addOccupation(newOccupation)}
+                disabled={!newOccupation.trim()}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold uppercase flex items-center space-x-1 disabled:opacity-40 cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add</span>
+              </button>
+            </div>
+
+            {/* Quick Suggestions */}
+            <div>
+              <span className="text-[11px] text-slate-400 font-semibold block mb-1.5">Quick Suggestions:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {SUGGESTED_OCCUPATIONS.slice(0, 10).map((sugg) => (
+                  <button
+                    key={sugg}
+                    type="button"
+                    onClick={() => addOccupation(sugg)}
+                    className="text-[10px] px-2 py-0.5 bg-slate-950 hover:bg-slate-800 text-slate-300 rounded border border-slate-800 transition cursor-pointer"
+                  >
+                    + {sugg}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Gameplay Story & Debut Lore */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <Compass className="w-4 h-4 text-amber-400" />
+              <span>Origin & Story Debut Facts</span>
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">Origin *</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={character.origin || ''}
+                    onChange={(e) => setCharacter({ ...character, origin: e.target.value })}
+                    placeholder="e.g. East Blue, Wano Country"
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
+                  />
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setCharacter({ ...character, origin: e.target.value });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-2 text-slate-400 text-xs"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Presets</option>
+                    {SUGGESTED_ORIGINS.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">First Appearance (Chapter / Ep)</label>
+                <input
+                  type="text"
+                  value={character.first_appearance || ''}
+                  onChange={(e) => setCharacter({ ...character, first_appearance: e.target.value })}
+                  placeholder="e.g. Chapter 3"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-400 font-semibold mb-1">First Storyline Arc</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={character.first_arc || ''}
+                    onChange={(e) => setCharacter({ ...character, first_arc: e.target.value })}
+                    placeholder="e.g. Romance Dawn"
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
+                  />
+                  <select
+                    onChange={(e) => {
+                      if (e.target.value) setCharacter({ ...character, first_arc: e.target.value });
+                    }}
+                    className="bg-slate-950 border border-slate-800 rounded-lg px-2 text-slate-400 text-xs"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>Arc Presets</option>
+                    {SUGGESTED_ARCS.map((a) => (
+                      <option key={a} value={a}>{a}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Birthday</label>
+                  <input
+                    type="text"
+                    value={character.birthday || ''}
+                    onChange={(e) => setCharacter({ ...character, birthday: e.target.value })}
+                    placeholder="e.g. November 11"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 font-semibold mb-1">Blood Type</label>
+                  <input
+                    type="text"
+                    value={character.blood_type || ''}
+                    onChange={(e) => setCharacter({ ...character, blood_type: e.target.value })}
+                    placeholder="e.g. X, F, S, XF"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-1 sm:col-span-2">
+                <label className="block text-slate-400 font-semibold mb-1">Description / Notes</label>
+                <textarea
+                  rows={2}
+                  value={character.description || ''}
+                  onChange={(e) => setCharacter({ ...character, description: e.target.value })}
+                  placeholder="Canonical background notes..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 text-xs"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Physical Attributes & Status */}
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
+            <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
+              <BookOpen className="w-4 h-4 text-amber-400" />
+              <span>Physical Attributes & Status</span>
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
               <div>
@@ -266,11 +782,12 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 <select
                   value={character.gender || 'Unknown'}
                   onChange={(e) => setCharacter({ ...character, gender: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold"
                 >
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Unknown">Unknown</option>
+                  <option value="Other">Other</option>
                 </select>
               </div>
               <div>
@@ -278,7 +795,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 <select
                   value={character.race || 'Human'}
                   onChange={(e) => setCharacter({ ...character, race: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold"
                 >
                   <option value="Human">Human</option>
                   <option value="Fish-Man">Fish-Man</option>
@@ -287,7 +804,13 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   <option value="Giant">Giant</option>
                   <option value="Lunarian">Lunarian</option>
                   <option value="Cyborg">Cyborg</option>
+                  <option value="Oni">Oni</option>
+                  <option value="Buccaneer">Buccaneer</option>
+                  <option value="Ancient Giant">Ancient Giant</option>
+                  <option value="Sky Island">Sky Island</option>
+                  <option value="Animal">Animal</option>
                   <option value="Other">Other</option>
+                  <option value="Unknown">Unknown</option>
                 </select>
               </div>
               <div>
@@ -295,7 +818,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 <select
                   value={character.status || 'Alive'}
                   onChange={(e) => setCharacter({ ...character, status: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold"
                 >
                   <option value="Alive">Alive</option>
                   <option value="Dead">Dead</option>
@@ -372,7 +895,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
           </div>
 
           {/* Devil Fruit & Haki Multi-select */}
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4">
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
             <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2">
               Powers: Devil Fruit & Haki
             </h3>
@@ -395,9 +918,11 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
                 >
                   <option value="Paramecia">Paramecia</option>
+                  <option value="Special Paramecia">Special Paramecia</option>
                   <option value="Zoan">Zoan</option>
                   <option value="Ancient Zoan">Ancient Zoan</option>
                   <option value="Mythical Zoan">Mythical Zoan</option>
+                  <option value="Artificial Zoan">Artificial Zoan</option>
                   <option value="Logia">Logia</option>
                   <option value="None">None (No Fruit)</option>
                   <option value="Unknown">Unknown</option>
@@ -416,7 +941,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                       key={ht}
                       type="button"
                       onClick={() => toggleHaki(ht)}
-                      className={`p-3 rounded-lg border text-left flex items-center justify-between font-bold transition ${
+                      className={`p-3 rounded-lg border text-left flex items-center justify-between font-bold transition cursor-pointer ${
                         isChecked
                           ? 'bg-amber-950/60 border-amber-500 text-amber-300'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:bg-slate-800'
@@ -434,25 +959,41 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
 
         {/* Sidebar: Image Preview & Evidence Inspector */}
         <div className="space-y-6">
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center">
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-36">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">
-              Selected Image Preview
+              Portrait Preview
             </h3>
-            <div className="w-36 h-36 mx-auto rounded-xl overflow-hidden border-2 border-amber-600/40 bg-slate-950 mb-3 shadow-lg">
+            <div className="w-40 h-40 mx-auto rounded-xl overflow-hidden border-2 border-amber-600/40 bg-slate-950 mb-3 shadow-lg flex items-center justify-center">
               <img
                 src={character.image_url || 'https://via.placeholder.com/150?text=OP'}
                 alt={character.name}
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="text-[11px] text-slate-400">
+            <div className="font-extrabold text-slate-100 text-sm">{character.name}</div>
+            {character.japanese_name && (
+              <div className="text-xs text-amber-400 font-semibold">{character.japanese_name}</div>
+            )}
+            <div className="text-[11px] text-slate-400 mt-2">
               Source: <span className="text-slate-200">{character.image_source_name || 'Wiki Dataset'}</span>
+            </div>
+
+            {/* Quick action buttons in sidebar */}
+            <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
+              <button
+                onClick={handleSave}
+                disabled={isSaving || isDeleting}
+                className="w-full py-2.5 gold-button rounded-lg text-xs font-bold uppercase flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
+              >
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                <span>Save Fact Sheet</span>
+              </button>
             </div>
           </div>
 
-          {/* Evidence Inspector Modal/Box */}
+          {/* Evidence Inspector Box */}
           {showEvidence && (
-            <div className="p-5 bg-slate-900 border border-amber-600/50 rounded-xl space-y-3">
+            <div className="p-5 bg-slate-900 border border-amber-600/50 rounded-xl space-y-3 shadow-xl">
               <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
                 <ShieldCheck className="w-4 h-4" />
                 <span>Source Evidence Inspector</span>

@@ -61,6 +61,7 @@ export interface Character {
   name: string;
   slug: string;
   japanese_name?: string | null;
+  alias?: string | null;
   romanized_name?: string | null;
   gender: GenderType;
   race: RaceType;

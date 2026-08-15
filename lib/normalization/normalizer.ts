@@ -157,6 +157,7 @@ export interface NormalizedCharacterData {
   name: string;
   slug: string;
   japanese_name: string | null;
+  alias: string | null;
   romanized_name: string | null;
   gender: GenderType;
   race: RaceType;
@@ -196,11 +197,14 @@ export function normalizeRawCharacter(raw: RawCharacterRecord): NormalizedCharac
   const cleanAffiliations = (raw.affiliations || []).map((a) => a.trim()).filter((a) => a.length > 0);
   const cleanOccupations = (raw.occupations || []).map((o) => o.trim()).filter((o) => o.length > 0);
 
+  const aliasString = cleanAliases.join(', ') || raw.romanized_name?.trim() || null;
+
   return {
     name,
     slug,
     japanese_name: raw.japanese_name?.trim() || null,
-    romanized_name: raw.romanized_name?.trim() || null,
+    alias: aliasString,
+    romanized_name: raw.romanized_name?.trim() || aliasString,
     gender,
     race,
     status,

@@ -43,22 +43,32 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { character, affiliations, occupations, haki, aliases } = body;
 
+    // Sync alias string from aliases array if provided, or from character.alias
+    let finalAlias = character.alias;
+    if (Array.isArray(aliases) && aliases.length > 0) {
+      finalAlias = aliases.map((a: any) => (typeof a === 'string' ? a : a.alias)).filter(Boolean).join(', ');
+    }
+
     // Update main character row
     const { error: updateErr } = await supabase
       .from('characters')
       .update({
         name: character.name,
         japanese_name: character.japanese_name,
-        romanized_name: character.romanized_name,
+        alias: finalAlias || null,
+        romanized_name: finalAlias || character.romanized_name || null,
         gender: character.gender,
         race: character.race,
         status: character.status,
-        age: character.age !== null && character.age !== undefined ? Number(character.age) : null,
-        height: character.height !== null && character.height !== undefined ? Number(character.height) : null,
-        bounty: character.bounty !== null && character.bounty !== undefined ? Number(character.bounty) : null,
+        age: character.age !== null && character.age !== undefined && character.age !== '' ? Number(character.age) : null,
+        height: character.height !== null && character.height !== undefined && character.height !== '' ? Number(character.height) : null,
+        bounty: character.bounty !== null && character.bounty !== undefined && character.bounty !== '' ? Number(character.bounty) : null,
         origin: character.origin,
         first_appearance: character.first_appearance,
         first_arc: character.first_arc,
+        birthday: character.birthday,
+        blood_type: character.blood_type,
+        description: character.description,
         devil_fruit_name: character.devil_fruit_name,
         devil_fruit_type: character.devil_fruit_type,
         devil_fruit_model: character.devil_fruit_model,
@@ -75,20 +85,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Replace affiliations
     if (Array.isArray(affiliations)) {
       await supabase.from('character_affiliations').delete().eq('character_id', id);
-      if (affiliations.length > 0) {
+      const validAffs = affiliations.map((a: string) => (typeof a === 'string' ? a.trim() : '')).filter(Boolean);
+      if (validAffs.length > 0) {
         await supabase
           .from('character_affiliations')
-          .insert(affiliations.map((a: string) => ({ character_id: id, affiliation: a })));
+          .insert(validAffs.map((a: string) => ({ character_id: id, affiliation: a })));
       }
     }
 
     // Replace occupations
     if (Array.isArray(occupations)) {
       await supabase.from('character_occupations').delete().eq('character_id', id);
-      if (occupations.length > 0) {
+      const validOccs = occupations.map((o: string) => (typeof o === 'string' ? o.trim() : '')).filter(Boolean);
+      if (validOccs.length > 0) {
         await supabase
           .from('character_occupations')
-          .insert(occupations.map((o: string) => ({ character_id: id, occupation: o })));
+          .insert(validOccs.map((o: string) => ({ character_id: id, occupation: o })));
       }
     }
 
@@ -109,14 +121,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Replace Aliases
     if (Array.isArray(aliases)) {
       await supabase.from('character_aliases').delete().eq('character_id', id);
-      if (aliases.length > 0) {
-        await supabase.from('character_aliases').insert(
-          aliases.map((a: any) => ({
-            character_id: id,
-            alias: typeof a === 'string' ? a : a.alias,
-            alias_type: typeof a === 'object' ? a.alias_type || 'alias' : 'alias',
-          }))
-        );
+      const validAliases = aliases
+        .map((a: any) => ({
+          character_id: id,
+          alias: (typeof a === 'string' ? a : a.alias || '').trim(),
+          alias_type: typeof a === 'object' ? a.alias_type || 'alias' : 'alias',
+        }))
+        .filter((a) => Boolean(a.alias));
+
+      if (validAliases.length > 0) {
+        await supabase.from('character_aliases').insert(validAliases);
       }
     }
 

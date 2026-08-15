@@ -5,6 +5,7 @@ export interface MatchCandidate {
   name: string;
   slug: string;
   japanese_name?: string | null;
+  alias?: string | null;
   romanized_name?: string | null;
   aliases?: string[];
 }
@@ -29,16 +30,15 @@ export function matchCharacter(
       return { confidence: 1.0, matchedId: candidate.id, reason: 'Exact slug match' };
     }
 
-    // 95% - Exact name or romanized match
+    // 95% - Exact name or alias match
     if (candidate.name.toLowerCase() === inputName.toLowerCase()) {
       return { confidence: 0.95, matchedId: candidate.id, reason: 'Exact name match' };
     }
     if (
-      inputRomanized &&
-      candidate.romanized_name &&
-      candidate.romanized_name.toLowerCase() === inputRomanized.toLowerCase()
+      (inputRomanized && candidate.alias && candidate.alias.toLowerCase() === inputRomanized.toLowerCase()) ||
+      (inputRomanized && candidate.romanized_name && candidate.romanized_name.toLowerCase() === inputRomanized.toLowerCase())
     ) {
-      return { confidence: 0.95, matchedId: candidate.id, reason: 'Exact romanized name match' };
+      return { confidence: 0.95, matchedId: candidate.id, reason: 'Exact alias match' };
     }
 
     // 90% - Alias / epithet match

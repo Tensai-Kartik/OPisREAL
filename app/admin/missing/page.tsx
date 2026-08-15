@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
@@ -20,7 +20,7 @@ export default function AdminMissingDataPage() {
 
   const loadMissingCharacters = () => {
     setIsLoading(true);
-    fetch('/api/admin/characters?limit=1000')
+    fetch('/api/admin/characters?limit=2000')
       .then((res) => res.json())
       .then((data) => {
         const all = data.characters || [];
@@ -33,7 +33,9 @@ export default function AdminMissingDataPage() {
               !c.image_url ||
               c.devil_fruit_type === 'Unknown' ||
               !c.origin ||
-              c.origin === 'Unknown')
+              c.origin === 'Unknown' ||
+              (!c.first_appearance && !c.first_arc) ||
+              (!c.alias && !c.romanized_name))
         );
         setAllCharacters(missing);
         applyFilters(missing, query, missingFilter);
@@ -54,6 +56,7 @@ export default function AdminMissingDataPage() {
         (c) =>
           c.name.toLowerCase().includes(lower) ||
           (c.japanese_name && c.japanese_name.toLowerCase().includes(lower)) ||
+          (c.alias && c.alias.toLowerCase().includes(lower)) ||
           (c.origin && c.origin.toLowerCase().includes(lower))
       );
     }
@@ -70,6 +73,10 @@ export default function AdminMissingDataPage() {
       result = result.filter((c) => c.devil_fruit_type === 'Unknown');
     } else if (filter === 'origin') {
       result = result.filter((c) => !c.origin || c.origin === 'Unknown');
+    } else if (filter === 'debut') {
+      result = result.filter((c) => !c.first_appearance && !c.first_arc);
+    } else if (filter === 'alias') {
+      result = result.filter((c) => !c.alias && !c.romanized_name);
     }
 
     setFilteredCharacters(result);
@@ -138,7 +145,7 @@ export default function AdminMissingDataPage() {
             <span>Missing Attributes Queue ({totalItems})</span>
           </h1>
           <p className="text-slate-400 text-xs mt-1">
-            Characters requiring fact completion: age, height, bounty, origin, or portrait image.
+            Characters requiring fact completion: age, height, bounty, origin, debut, alias, or portrait image.
           </p>
         </div>
 
@@ -159,7 +166,7 @@ export default function AdminMissingDataPage() {
                 setQuery(e.target.value);
                 applyFilters(allCharacters, e.target.value, missingFilter);
               }}
-              placeholder="Search missing characters by name, origin..."
+              placeholder="Search missing characters by name, alias, origin..."
               className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
@@ -189,6 +196,8 @@ export default function AdminMissingDataPage() {
             <option value="image">Missing Portrait</option>
             <option value="fruit">Unknown Devil Fruit</option>
             <option value="origin">Unknown Origin</option>
+            <option value="debut">Missing Debut / Arc</option>
+            <option value="alias">Missing Alias / Epithet</option>
           </select>
         </div>
       </div>
@@ -211,6 +220,10 @@ export default function AdminMissingDataPage() {
               if (!c.image_url) missingList.push('Image');
               if (c.devil_fruit_type === 'Unknown') missingList.push('Fruit');
               if (!c.origin || c.origin === 'Unknown') missingList.push('Origin');
+              if (!c.first_appearance && !c.first_arc) missingList.push('Debut');
+              if (!c.alias && !c.romanized_name) missingList.push('Alias');
+
+              const displayAlias = c.alias || c.romanized_name;
 
               return (
                 <div key={c.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col justify-between space-y-4 shadow-md hover:border-slate-700 transition">
@@ -225,6 +238,12 @@ export default function AdminMissingDataPage() {
                       <div className="font-bold text-slate-100 text-base truncate">{c.name}</div>
                       {c.japanese_name && (
                         <div className="text-[11px] text-slate-400 truncate">{c.japanese_name}</div>
+                      )}
+                      {displayAlias && (
+                        <div className="text-[11px] text-amber-400 truncate flex items-center space-x-1 mt-0.5">
+                          <Tag className="w-3 h-3 inline shrink-0" />
+                          <span>{displayAlias}</span>
+                        </div>
                       )}
                       <div className="text-[11px] text-sky-400 font-semibold mt-1">
                         Missing: {missingList.join(', ')}

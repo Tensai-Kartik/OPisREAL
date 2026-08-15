@@ -69,20 +69,23 @@ export default function VictoryCardModal({
           {character.name}
         </h3>
         {character.japanese_name && (
-          <div className="text-[11px] text-amber-400 font-semibold mb-2">
-            {character.japanese_name} ({character.romanized_name || ''})
+          <div className="text-[11px] text-amber-400 font-semibold mb-1">
+            {character.japanese_name}
           </div>
         )}
 
         {/* Aliases */}
-        {character.aliases && character.aliases.length > 0 && (
+        {(character.alias || (character.aliases && character.aliases.length > 0)) && (
           <div className="flex flex-wrap justify-center gap-1 mb-3">
-            {character.aliases.slice(0, 4).map((a, idx) => (
+            {(character.aliases && character.aliases.length > 0
+              ? character.aliases.slice(0, 4).map((a) => (typeof a === 'string' ? a : a.alias))
+              : (character.alias || '').split(/,\s*/).slice(0, 4)
+            ).filter(Boolean).map((aliasText, idx) => (
               <span
                 key={idx}
                 className="px-2 py-0.5 bg-slate-900/90 border border-amber-600/30 text-amber-300 rounded text-[10px] font-semibold"
               >
-                &quot;{typeof a === 'string' ? a : a.alias}&quot;
+                &quot;{aliasText}&quot;
               </span>
             ))}
           </div>
