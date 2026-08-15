@@ -49,24 +49,66 @@ export async function GET(req: NextRequest) {
     const calculateScore = (name: string, aliasStr: string | null, matchedAliasStr: string | null, isVerified: boolean, bounty?: number | null) => {
       let score = 0;
       const n = name.toLowerCase();
-      if (n === qLower) score += 120;
-      else if (n.startsWith(qLower)) score += 80;
-      else if (n.includes(qLower)) score += 50;
+      const nameWords = n.split(/[\s,.-]+/);
 
+      // 1. Exact full match on name
+      if (n === qLower) {
+        score += 1000;
+      }
+      // 2. Name starts with query
+      else if (n.startsWith(qLower)) {
+        score += 600;
+      }
+      // 3. Any individual word in name equals query (e.g. "Bege" in "Capone Bege")
+      else if (nameWords.some(w => w === qLower)) {
+        score += 550;
+      }
+      // 4. Any individual word in name starts with query (e.g. "Be..." in "Capone Bege")
+      else if (nameWords.some(w => w.startsWith(qLower))) {
+        score += 450;
+      }
+      // 5. Substring match in name
+      else if (n.includes(qLower)) {
+        score += 100;
+      }
+
+      // Check matched specific alias
       if (matchedAliasStr) {
         const ma = matchedAliasStr.toLowerCase();
-        if (ma === qLower) score += 100;
-        else if (ma.startsWith(qLower)) score += 75;
-        else if (ma.includes(qLower)) score += 40;
+        const aliasWords = ma.split(/[\s,.-]+/);
+        if (ma === qLower) {
+          score += 500;
+        } else if (ma.startsWith(qLower)) {
+          score += 400;
+        } else if (aliasWords.some(w => w === qLower)) {
+          score += 380;
+        } else if (aliasWords.some(w => w.startsWith(qLower))) {
+          score += 320;
+        } else if (ma.includes(qLower)) {
+          score += 80;
+        }
       }
 
+      // Check full alias list
       if (aliasStr) {
         const a = aliasStr.toLowerCase();
-        if (a.includes(qLower)) score += 30;
+        const parts = a.split(/,\s*/);
+        for (const p of parts) {
+          const words = p.split(/[\s,.-]+/);
+          if (p === qLower) {
+            score += 400;
+          } else if (p.startsWith(qLower)) {
+            score += 300;
+          } else if (words.some(w => w === qLower)) {
+            score += 280;
+          } else if (words.some(w => w.startsWith(qLower))) {
+            score += 240;
+          }
+        }
       }
 
-      if (isVerified) score += 30;
-      if (bounty && bounty > 500000000) score += 15;
+      if (isVerified) score += 15;
+      if (bounty && bounty > 1000000000) score += 5;
       return score;
     };
 

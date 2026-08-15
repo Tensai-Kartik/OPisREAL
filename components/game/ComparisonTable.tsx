@@ -14,43 +14,57 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
   if (!guesses || guesses.length === 0) return null;
   const isDark = theme === 'dark';
 
-  const getCellStyle = (status: string) => {
+  const getCellStyle = (status: string, isLatest: boolean) => {
+    let base = '';
     switch (status) {
       case 'correct':
-        return 'bg-green-600 text-white border-green-500/80 shadow-sm';
+        base = 'bg-green-600 text-white border-green-400/90 shadow-md';
+        if (isLatest) base += ' glow-correct';
+        break;
       case 'partial':
-        return 'bg-amber-600 text-white border-amber-400/80 shadow-sm';
+        base = 'bg-amber-600 text-white border-amber-300/90 shadow-md';
+        if (isLatest) base += ' glow-partial';
+        break;
       case 'higher':
       case 'lower':
       case 'earlier':
       case 'later':
       case 'incorrect':
-        return 'bg-red-600 text-white border-red-500/80 shadow-sm';
+        base = 'bg-red-600 text-white border-red-400/80 shadow-md';
+        break;
       default:
-        return isDark
-          ? 'bg-slate-700 text-slate-200 border-slate-500/80 shadow-sm'
+        base = isDark
+          ? 'bg-slate-800 text-slate-200 border-slate-600/80 shadow-sm'
           : 'bg-slate-600 text-white border-slate-400/80 shadow-sm';
     }
+    return base;
   };
 
-  const renderNumericCell = (attr: { status: string; displayValue: string }) => {
+  const getAnimationClass = (isLatest: boolean) => {
+    return isLatest ? 'animate-card-flip' : '';
+  };
+
+  const renderNumericCell = (attr: { status: string; displayValue: string }, colIdx: number, isLatest: boolean) => {
     const isHigher = attr.status === 'higher' || attr.status === 'later';
     const isLower = attr.status === 'lower' || attr.status === 'earlier';
 
     return (
-      <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(attr.status)}`}>
-        <div className="font-semibold text-[11px] text-center leading-tight tracking-tight">
+      <div
+        style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+        className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
+      >
+        <div className="font-bold text-[11px] text-center leading-tight tracking-tight drop-shadow-sm">
           {attr.displayValue}
         </div>
         {isHigher && (
-          <div className="flex items-center space-x-0.5 mt-0.5 text-amber-300 font-bold text-[10px] animate-bounce">
-            <ArrowUp className="w-3 h-3 stroke-[2.5]" />
+          <div className="flex items-center space-x-0.5 mt-0.5 text-amber-200 font-black text-[10px] animate-bounce">
+            <ArrowUp className="w-3.5 h-3.5 stroke-[3]" />
             <span>HIGHER</span>
           </div>
         )}
         {isLower && (
-          <div className="flex items-center space-x-0.5 mt-0.5 text-amber-300 font-bold text-[10px] animate-bounce">
-            <ArrowDown className="w-3 h-3 stroke-[2.5]" />
+          <div className="flex items-center space-x-0.5 mt-0.5 text-amber-200 font-black text-[10px] animate-bounce">
+            <ArrowDown className="w-3.5 h-3.5 stroke-[3]" />
             <span>LOWER</span>
           </div>
         )}
@@ -58,14 +72,17 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     );
   };
 
-  const renderTextCell = (attr: { status: string; displayValue: string }, subtext?: string) => {
+  const renderTextCell = (attr: { status: string; displayValue: string }, colIdx: number, isLatest: boolean, subtext?: string) => {
     return (
-      <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(attr.status)}`}>
-        <div className="font-semibold text-[11px] text-center leading-tight break-words max-w-[110px]">
+      <div
+        style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+        className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
+      >
+        <div className="font-bold text-[11px] text-center leading-tight break-words max-w-[110px] drop-shadow-sm">
           {attr.displayValue}
         </div>
         {subtext && (
-          <div className="text-[9px] opacity-90 font-medium text-center mt-0.5 leading-none">
+          <div className="text-[9px] opacity-90 font-semibold text-center mt-0.5 leading-none">
             ({subtext})
           </div>
         )}
@@ -73,18 +90,26 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     );
   };
 
-  const renderDevilFruitCell = (fruitAttr: { status: string; displayValue: string }, typeAttr: { status: string; displayValue: string }) => {
+  const renderDevilFruitCell = (
+    fruitAttr: { status: string; displayValue: string },
+    typeAttr: { status: string; displayValue: string },
+    colIdx: number,
+    isLatest: boolean
+  ) => {
     const typeHeading = typeAttr.displayValue;
     const fruitName = fruitAttr.displayValue;
     const cellStatus = fruitAttr.status === 'correct' ? 'correct' : (fruitAttr.status === 'partial' ? 'partial' : typeAttr.status);
 
     return (
-      <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(cellStatus)}`}>
-        <div className="font-bold text-[11px] text-center leading-tight break-words max-w-[120px]">
+      <div
+        style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+        className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(cellStatus, isLatest)}`}
+      >
+        <div className="font-bold text-[11px] text-center leading-tight break-words max-w-[120px] drop-shadow-sm">
           {typeHeading}
         </div>
         {fruitName && fruitName !== 'None' && fruitName !== 'Unknown' && (
-          <div className="text-[9.5px] opacity-90 font-medium text-center mt-0.5 leading-tight break-words max-w-[120px]">
+          <div className="text-[9.5px] opacity-90 font-semibold text-center mt-0.5 leading-tight break-words max-w-[120px] text-amber-100">
             ({fruitName})
           </div>
         )}
@@ -92,15 +117,18 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     );
   };
 
-  const renderHakiCell = (attr: { status: string; displayValue: string }) => {
+  const renderHakiCell = (attr: { status: string; displayValue: string }, colIdx: number, isLatest: boolean) => {
     return (
-      <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(attr.status)}`}>
+      <div
+        style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+        className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
+      >
         <HakiBadgeList hakiDisplayValue={attr.displayValue} />
       </div>
     );
   };
 
-  const renderDebutCell = (attr: { status: string; displayValue: string }) => {
+  const renderDebutCell = (attr: { status: string; displayValue: string }, colIdx: number, isLatest: boolean) => {
     const raw = attr.displayValue || 'Unknown';
     const match = raw.match(/^(.*?)\s*\((.*?)\)$/);
 
@@ -108,11 +136,14 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
       const chapterPart = match[1];
       const arcPart = match[2];
       return (
-        <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(attr.status)}`}>
-          <div className="font-bold text-[11px] text-center leading-tight">
+        <div
+          style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+          className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
+        >
+          <div className="font-bold text-[11px] text-center leading-tight drop-shadow-sm">
             {chapterPart}
           </div>
-          <div className="text-[9.5px] opacity-90 font-semibold text-center mt-0.5 leading-tight text-amber-200">
+          <div className="text-[9.5px] opacity-90 font-bold text-center mt-0.5 leading-tight text-amber-200">
             ({arcPart})
           </div>
         </div>
@@ -120,8 +151,11 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     }
 
     return (
-      <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${getCellStyle(attr.status)}`}>
-        <div className="font-semibold text-[11px] text-center leading-tight break-words max-w-[110px]">
+      <div
+        style={isLatest ? { animationDelay: `${colIdx * 70}ms` } : undefined}
+        className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
+      >
+        <div className="font-bold text-[11px] text-center leading-tight break-words max-w-[110px]">
           {raw}
         </div>
       </div>
@@ -154,12 +188,15 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
             const isLatest = idx === 0;
 
             return (
-              <tr key={g.character.id} className={isLatest ? 'animate-fadeIn' : ''}>
-                {/* Character Portrait & Name */}
+              <tr key={g.character.id}>
+                {/* 0. Character Portrait & Name */}
                 <td>
-                  <div className={`p-1.5 rounded-md border flex flex-col items-center justify-center min-h-[52px] ${
-                    isDark ? 'bg-slate-900 border-amber-600/40 text-slate-100' : 'bg-white border-slate-300 text-slate-800'
-                  }`}>
+                  <div
+                    style={isLatest ? { animationDelay: '0ms' } : undefined}
+                    className={`p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] transition-transform ${getAnimationClass(isLatest)} ${
+                      isDark ? 'bg-slate-900 border-amber-600/50 text-slate-100 shadow-md' : 'bg-white border-slate-300 text-slate-800 shadow-sm'
+                    }`}
+                  >
                     <CharacterAvatar
                       src={g.character.image_url}
                       name={g.character.name}
@@ -172,38 +209,38 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
                   </div>
                 </td>
 
-                {/* Gender */}
-                <td>{renderTextCell(g.gender)}</td>
+                {/* 1. Gender */}
+                <td>{renderTextCell(g.gender, 1, isLatest)}</td>
 
-                {/* Race */}
-                <td>{renderTextCell(g.race)}</td>
+                {/* 2. Race */}
+                <td>{renderTextCell(g.race, 2, isLatest)}</td>
 
-                {/* Affiliation */}
-                <td>{renderTextCell(g.affiliation)}</td>
+                {/* 3. Affiliation */}
+                <td>{renderTextCell(g.affiliation, 3, isLatest)}</td>
 
-                {/* Status */}
-                <td>{renderTextCell(g.status)}</td>
+                {/* 4. Status */}
+                <td>{renderTextCell(g.status, 4, isLatest)}</td>
 
-                {/* Devil Fruit (Fruit Type as Main Heading, Fruit Name in Braces) */}
-                <td>{renderDevilFruitCell(g.devilFruit, g.devilFruitType)}</td>
+                {/* 5. Devil Fruit */}
+                <td>{renderDevilFruitCell(g.devilFruit, g.devilFruitType, 5, isLatest)}</td>
 
-                {/* Haki */}
-                <td>{renderHakiCell(g.haki)}</td>
+                {/* 6. Haki */}
+                <td>{renderHakiCell(g.haki, 6, isLatest)}</td>
 
-                {/* Bounty */}
-                <td>{renderNumericCell(g.bounty)}</td>
+                {/* 7. Bounty */}
+                <td>{renderNumericCell(g.bounty, 7, isLatest)}</td>
 
-                {/* Age */}
-                <td>{renderNumericCell(g.age)}</td>
+                {/* 8. Age */}
+                <td>{renderNumericCell(g.age, 8, isLatest)}</td>
 
-                {/* Height */}
-                <td>{renderNumericCell(g.height)}</td>
+                {/* 9. Height */}
+                <td>{renderNumericCell(g.height, 9, isLatest)}</td>
 
-                {/* Debut */}
-                <td>{renderDebutCell(g.firstAppearance)}</td>
+                {/* 10. Debut */}
+                <td>{renderDebutCell(g.firstAppearance, 10, isLatest)}</td>
 
-                {/* Origin */}
-                <td>{renderTextCell(g.origin)}</td>
+                {/* 11. Origin */}
+                <td>{renderTextCell(g.origin, 11, isLatest)}</td>
               </tr>
             );
           })}

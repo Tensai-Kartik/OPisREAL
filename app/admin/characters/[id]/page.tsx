@@ -244,6 +244,7 @@ function CharacterEditContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showEvidence, setShowEvidence] = useState(false);
 
@@ -349,7 +350,8 @@ function CharacterEditContent() {
       .then((data) => {
         if (data.success) {
           setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
+          setShowSuccessModal(true);
+          setTimeout(() => setSaveSuccess(false), 4000);
         } else {
           setErrorMsg(data.error || 'Failed to save');
         }
@@ -515,6 +517,77 @@ function CharacterEditContent() {
         <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
           <CheckCircle2 className="w-4 h-4" />
           <span>Character canonical record & game facts saved successfully!</span>
+        </div>
+      )}
+
+      {/* Verification Success Small Modal Popup */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-slate-900 border-2 border-amber-500/70 rounded-2xl max-w-sm w-full p-5 shadow-2xl text-center space-y-4 animate-card-flip">
+            {/* Top Icon & Close */}
+            <div className="relative">
+              <div className="w-12 h-12 mx-auto rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+                <ShieldCheck className="w-7 h-7" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="absolute top-0 right-0 text-slate-400 hover:text-slate-200 p-1 rounded-lg hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Title & Description */}
+            <div>
+              <h3 className="text-base font-black text-slate-100 uppercase tracking-tight">
+                Verified & Saved!
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                <strong className="text-amber-300 font-bold">{character.name}</strong> details have been saved and added to canonical characters.
+              </p>
+            </div>
+
+            {/* Mini Character Badge */}
+            <div className="p-2.5 bg-slate-950 rounded-xl border border-slate-800 flex items-center space-x-3 text-left">
+              <CharacterAvatar
+                src={character.image_url}
+                name={character.name}
+                size="md"
+                className="border border-amber-500/40 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="font-extrabold text-slate-100 text-xs truncate">{character.name}</div>
+                {character.alias && (
+                  <div className="text-[10px] text-amber-400 font-semibold truncate">
+                    &quot;{character.alias}&quot;
+                  </div>
+                )}
+                <div className="text-[10px] text-slate-400 truncate">
+                  {character.devil_fruit_type} • {character.origin || 'Unknown'}
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setShowSuccessModal(false)}
+                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase transition cursor-pointer"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={handleGoBack}
+                className="flex-1 py-2 gold-button rounded-lg text-xs font-black uppercase shadow-md flex items-center justify-center space-x-1 cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Return</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

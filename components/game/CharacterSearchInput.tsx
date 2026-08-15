@@ -36,26 +36,43 @@ export default function CharacterSearchInput({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!query.trim()) {
+    const trimmed = query.trim();
+    if (!trimmed) {
       setResults([]);
       setIsOpen(false);
+      setIsLoading(false);
       return;
     }
 
+    let active = true;
+
     const timer = setTimeout(() => {
       setIsLoading(true);
-      fetch(`/api/game/search?q=${encodeURIComponent(query.trim())}`)
+      fetch(`/api/game/search?q=${encodeURIComponent(trimmed)}`)
         .then((res) => res.json())
         .then((data) => {
-          setResults(data.results || []);
-          setIsOpen(true);
-          setSelectedIndex(-1);
+          if (active) {
+            setResults(data.results || []);
+            setIsOpen(true);
+            setSelectedIndex(-1);
+          }
         })
-        .catch(() => setResults([]))
-        .finally(() => setIsLoading(false));
-    }, 180);
+        .catch(() => {
+          if (active) {
+            setResults([]);
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setIsLoading(false);
+          }
+        });
+    }, 120);
 
-    return () => clearTimeout(timer);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
   }, [query]);
 
   // Click outside listener
