@@ -61,6 +61,7 @@ export default function VictoryCardModal({
             src={character.image_url}
             name={character.name}
             size="xl"
+            fit="contain"
             className="border-2 border-amber-500/60 shadow-lg"
           />
         </div>

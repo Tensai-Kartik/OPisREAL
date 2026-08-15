@@ -1312,11 +1312,21 @@ function NewCharacterContent() {
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">
               Portrait Preview
             </h3>
-            <div className="w-40 h-40 mx-auto rounded-xl overflow-hidden border-2 border-amber-600/40 bg-slate-950 mb-3 shadow-lg flex items-center justify-center">
+            <div className="w-48 aspect-[3/4] max-h-72 mx-auto rounded-2xl overflow-hidden border-2 border-amber-500/50 bg-slate-950 mb-3 shadow-2xl relative flex items-center justify-center">
+              {character.image_url && (
+                <img
+                  src={character.image_url}
+                  alt=""
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  className="absolute inset-0 w-full h-full object-cover blur-md opacity-35 scale-110 pointer-events-none"
+                />
+              )}
               <img
-                src={character.image_url || 'https://via.placeholder.com/150?text=New+OP'}
+                src={character.image_url || 'https://via.placeholder.com/200x260?text=One+Piece'}
                 alt={character.name || 'New Character'}
-                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+                className="relative z-10 w-full h-full object-contain p-1.5 drop-shadow-md"
               />
             </div>
             <div className="font-extrabold text-slate-100 text-sm">{character.name || 'Character Name'}</div>
