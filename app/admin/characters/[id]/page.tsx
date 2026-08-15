@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, use } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Save, ShieldCheck, Eye, Plus, Trash2, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { Character, CharacterFieldEvidence, HakiType } from '@/types/character';
@@ -29,6 +28,14 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showEvidence, setShowEvidence] = useState(false);
 
+  const handleBack = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/admin/characters');
+    }
+  };
+
   useEffect(() => {
     setIsLoading(true);
     fetch(`/api/admin/characters/${id}`)
@@ -36,12 +43,28 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       .then((data) => {
         if (data.error) setErrorMsg(data.error);
         else {
-          setCharacter(data.character);
+          const aliasList = data.aliases || [];
+          let aliasString = data.character?.romanized_name || '';
+          if (aliasList.length > 0) {
+            const aliasNames = aliasList.map((a: any) => a.alias);
+            if (!aliasString || aliasString.trim() === '') {
+              aliasString = aliasNames.join(', ');
+            } else {
+              const combined = Array.from(new Set([aliasString, ...aliasNames].flatMap((s: string) => s.split(',').map((x: string) => x.trim())).filter(Boolean)));
+              aliasString = combined.join(', ');
+            }
+          }
+          const loadedChar = data.character ? { ...data.character, romanized_name: aliasString } : null;
+          setCharacter(loadedChar);
           setEvidence(data.evidence || []);
           setAffiliations(data.affiliations || []);
           setOccupations(data.occupations || []);
           setHakiList(data.haki || []);
-          setAliases(data.aliases || []);
+          setAliases(
+            aliasList.length > 0
+              ? aliasList
+              : aliasString.split(',').map((s: string) => s.trim()).filter(Boolean).map((a: string) => ({ alias: a, alias_type: 'alias' }))
+          );
         }
       })
       .catch(() => setErrorMsg('Failed to fetch character details.'))
@@ -59,7 +82,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       const res = await fetch(`/api/admin/characters/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        router.push('/admin/characters');
+        handleBack();
       } else {
         alert(data.error || 'Failed to delete character');
       }
@@ -130,9 +153,13 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       <div className="p-6 bg-slate-900 border border-red-500/40 rounded-xl text-center max-w-md mx-auto my-12">
         <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
         <p className="text-slate-300 text-sm">{errorMsg || 'Character not found'}</p>
-        <Link href="/admin/characters" className="mt-4 inline-block px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
-          Back to List
-        </Link>
+        <button
+          type="button"
+          onClick={handleBack}
+          className="mt-4 inline-block px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase cursor-pointer"
+        >
+          Back
+        </button>
       </div>
     );
   }
@@ -142,12 +169,14 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       {/* Top Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900 p-4 border border-slate-800 rounded-xl sticky top-20 z-30 shadow-xl">
         <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/characters"
-            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 rounded-lg"
+          <button
+            type="button"
+            onClick={handleBack}
+            title="Go Back"
+            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <div>
             <h1 className="text-xl font-black text-slate-100 uppercase tracking-tight flex items-center space-x-2">
               <span>{character.name}</span>
@@ -221,13 +250,37 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 />
               </div>
               <div>
-                <label className="block text-slate-400 font-semibold mb-1">Romanized Name</label>
+                <label className="block text-slate-400 font-semibold mb-1">
+                  Alias / Epithets <span className="text-[10px] text-slate-500 font-normal">(comma-separated)</span>
+                </label>
                 <input
                   type="text"
+                  placeholder="e.g. Pirate Hunter, King of Hell, Marimo"
                   value={character.romanized_name || ''}
-                  onChange={(e) => setCharacter({ ...character, romanized_name: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCharacter({ ...character, romanized_name: val });
+                    const list = val
+                      .split(',')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                      .map((a) => ({ alias: a, alias_type: 'alias' }));
+                    setAliases(list);
+                  }}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500 font-medium"
                 />
+                {aliases.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {aliases.map((al, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-semibold"
+                      >
+                        {al.alias}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="col-span-1 sm:col-span-2">
                 <label className="block text-slate-400 font-semibold mb-1">Image URL (Portrait / Avatar)</label>

@@ -1,34 +1,30 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, CheckCircle2, Loader2, ArrowRight, Search, Trash2 } from 'lucide-react';
 import { Character } from '@/types/character';
 
-export default function AdminConflictsPage() {
+function AdminConflictsContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams.get('q') || '';
+
   const [allConflicts, setAllConflicts] = useState<Character[]>([]);
   const [filteredConflicts, setFilteredConflicts] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadConflicts = () => {
-    setIsLoading(true);
-    fetch('/api/admin/characters?status=conflict&limit=100')
-      .then((res) => res.json())
-      .then((data) => {
-        const list = data.characters || [];
-        setAllConflicts(list);
-        applySearch(list, query);
-      })
-      .catch(() => {
-        setAllConflicts([]);
-        setFilteredConflicts([]);
-      })
-      .finally(() => setIsLoading(false));
-  };
+  const updateUrl = useCallback((q: string) => {
+    const params = new URLSearchParams();
+    if (q && q.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    const target = qs ? `/admin/conflicts?${qs}` : '/admin/conflicts';
+    window.history.replaceState(null, '', target);
+  }, []);
 
-  const applySearch = (list: Character[], q: string) => {
+  const applySearch = useCallback((list: Character[], q: string) => {
     if (!q.trim()) {
       setFilteredConflicts(list);
       return;
@@ -41,15 +37,45 @@ export default function AdminConflictsPage() {
         (c.origin && c.origin.toLowerCase().includes(lower))
     );
     setFilteredConflicts(result);
-  };
+  }, []);
+
+  const loadConflicts = useCallback(() => {
+    setIsLoading(true);
+    fetch('/api/admin/characters?status=conflict&limit=100')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.characters || [];
+        setAllConflicts(list);
+        applySearch(list, initialQuery);
+      })
+      .catch(() => {
+        setAllConflicts([]);
+        setFilteredConflicts([]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [initialQuery, applySearch]);
 
   useEffect(() => {
     loadConflicts();
-  }, []);
+  }, [loadConflicts]);
+
+  // Handle browser back/forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('q') || '';
+      setQuery(q);
+      applySearch(allConflicts, q);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [allConflicts, applySearch]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     applySearch(allConflicts, query);
+    updateUrl(query);
   };
 
   const handleDelete = async (char: Character) => {
@@ -107,6 +133,7 @@ export default function AdminConflictsPage() {
               onChange={(e) => {
                 setQuery(e.target.value);
                 applySearch(allConflicts, e.target.value);
+                updateUrl(e.target.value);
               }}
               placeholder="Search conflicts by name, origin..."
               className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
@@ -179,5 +206,20 @@ export default function AdminConflictsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminConflictsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading conflicts...</p>
+        </div>
+      }
+    >
+      <AdminConflictsContent />
+    </Suspense>
   );
 }

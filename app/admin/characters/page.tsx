@@ -1,16 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Search, Filter, Edit3, CheckCircle2, AlertTriangle, HelpCircle, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
-export default function AdminCharactersPage() {
+function AdminCharactersContent() {
+  const searchParams = useSearchParams();
+
+  const initialPage = parseInt(searchParams.get('page') || '1', 10) || 1;
+  const initialStatus = searchParams.get('status') || 'all';
+  const initialQuery = searchParams.get('q') || '';
+
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState(initialQuery);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [page, setPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,10 +25,20 @@ export default function AdminCharactersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const loadCharacters = () => {
+  const updateUrl = useCallback((p: number, status: string, q: string) => {
+    const params = new URLSearchParams();
+    if (p > 1) params.set('page', String(p));
+    if (status && status !== 'all') params.set('status', status);
+    if (q && q.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    const target = qs ? `/admin/characters?${qs}` : '/admin/characters';
+    window.history.replaceState(null, '', target);
+  }, []);
+
+  const loadCharacters = useCallback((targetPage = page, targetStatus = statusFilter, targetQuery = query) => {
     setIsLoading(true);
     setErrorMsg(null);
-    const url = `/api/admin/characters?q=${encodeURIComponent(query)}&status=${statusFilter}&page=${page}&limit=15`;
+    const url = `/api/admin/characters?q=${encodeURIComponent(targetQuery)}&status=${targetStatus}&page=${targetPage}&limit=15`;
 
     fetch(url)
       .then((res) => res.json())
@@ -36,16 +53,46 @@ export default function AdminCharactersPage() {
       })
       .catch(() => setErrorMsg('Failed to query characters from database.'))
       .finally(() => setIsLoading(false));
-  };
+  }, [page, statusFilter, query]);
 
   useEffect(() => {
-    loadCharacters();
+    loadCharacters(page, statusFilter, query);
   }, [page, statusFilter]);
+
+  // Handle browser back/forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const p = parseInt(params.get('page') || '1', 10) || 1;
+      const s = params.get('status') || 'all';
+      const q = params.get('q') || '';
+      setQuery(q);
+      setStatusFilter(s);
+      setPage(p);
+      loadCharacters(p, s, q);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [loadCharacters]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadCharacters();
+    updateUrl(1, statusFilter, query);
+    loadCharacters(1, statusFilter, query);
+  };
+
+  const handleStatusChange = (status: string) => {
+    setStatusFilter(status);
+    setPage(1);
+    updateUrl(1, status, query);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    updateUrl(newPage, statusFilter, query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteCharacter = async (char: Character) => {
@@ -149,10 +196,7 @@ export default function AdminCharactersPage() {
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-amber-500"
           >
             <option value="all">All Statuses</option>
@@ -173,7 +217,7 @@ export default function AdminCharactersPage() {
         <div className="p-6 bg-slate-900 border border-red-500/40 rounded-xl text-center">
           <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
           <p className="text-slate-300 text-sm">{errorMsg}</p>
-          <button onClick={loadCharacters} className="mt-3 px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
+          <button onClick={() => loadCharacters(page, statusFilter, query)} className="mt-3 px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
             Retry
           </button>
         </div>
@@ -262,14 +306,14 @@ export default function AdminCharactersPage() {
             <div className="flex items-center space-x-2">
               <button
                 disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
                 className="p-2 bg-slate-900 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 className="p-2 bg-slate-900 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -279,5 +323,20 @@ export default function AdminCharactersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminCharactersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading character list...</p>
+        </div>
+      }
+    >
+      <AdminCharactersContent />
+    </Suspense>
   );
 }

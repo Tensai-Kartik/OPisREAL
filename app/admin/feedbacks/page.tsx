@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { MessageSquare, CheckCircle2, Trash2, Clock, RefreshCw, AlertCircle, Loader2 } from 'lucide-react';
 
 interface Feedback {
@@ -23,11 +24,22 @@ const STATUS_STYLES: Record<string, string> = {
   bullshit: 'bg-red-950/60 border-red-500/40 text-red-300',
 };
 
-export default function AdminFeedbacksPage() {
+function AdminFeedbacksContent() {
+  const searchParams = useSearchParams();
+  const initialFilter = (searchParams.get('filter') as 'all' | 'pending' | 'done' | 'bullshit') || 'all';
+
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'done' | 'bullshit'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'done' | 'bullshit'>(initialFilter);
   const [updating, setUpdating] = useState<string | null>(null);
+
+  const updateUrl = useCallback((f: string) => {
+    const params = new URLSearchParams();
+    if (f && f !== 'all') params.set('filter', f);
+    const qs = params.toString();
+    const target = qs ? `/admin/feedbacks?${qs}` : '/admin/feedbacks';
+    window.history.replaceState(null, '', target);
+  }, []);
 
   const load = () => {
     setIsLoading(true);
@@ -38,7 +50,26 @@ export default function AdminFeedbacksPage() {
       .finally(() => setIsLoading(false));
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
+
+  // Handle browser back/forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const f = (params.get('filter') as 'all' | 'pending' | 'done' | 'bullshit') || 'all';
+      setFilter(f);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const handleFilterChange = (newFilter: 'all' | 'pending' | 'done' | 'bullshit') => {
+    setFilter(newFilter);
+    updateUrl(newFilter);
+  };
 
   const updateStatus = (id: string, status: 'pending' | 'done' | 'bullshit') => {
     setUpdating(id);
@@ -85,7 +116,7 @@ export default function AdminFeedbacksPage() {
         {(['all', 'pending', 'done', 'bullshit'] as const).map((f) => (
           <button
             key={f}
-            onClick={() => setFilter(f)}
+            onClick={() => handleFilterChange(f)}
             className={`px-4 py-1.5 rounded-lg border text-xs font-bold uppercase tracking-wider transition ${
               filter === f
                 ? 'bg-amber-500/20 border-amber-500/60 text-amber-300'
@@ -173,5 +204,20 @@ export default function AdminFeedbacksPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminFeedbacksPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading feedbacks...</p>
+        </div>
+      }
+    >
+      <AdminFeedbacksContent />
+    </Suspense>
   );
 }

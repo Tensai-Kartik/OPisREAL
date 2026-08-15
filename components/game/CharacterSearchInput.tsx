@@ -9,6 +9,7 @@ interface SearchResult {
   name: string;
   slug: string;
   image_url?: string | null;
+  aliases?: string[];
   matchedAlias?: string;
 }
 
@@ -144,6 +145,7 @@ export default function CharacterSearchInput({
             results.map((item, idx) => {
               const isAlreadyGuessed = guessedIds.includes(item.id);
               const isSelected = idx === (selectedIndex >= 0 ? selectedIndex : 0);
+              const aliasDisplay = item.aliases && item.aliases.length > 0 ? item.aliases.join(', ') : item.matchedAlias;
 
               return (
                 <div
@@ -155,25 +157,25 @@ export default function CharacterSearchInput({
                       : `border-slate-100 ${isSelected ? 'bg-slate-100 text-slate-900 border-l-4 border-l-amber-500 font-bold' : 'hover:bg-slate-50 text-slate-900'}`
                   } ${isAlreadyGuessed ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 min-w-0 flex-1 mr-2">
                     <CharacterAvatar
                       src={item.image_url}
                       name={item.name}
                       size="md"
                     />
-                    <div>
-                      <div className={`text-sm ${isDark ? 'font-extrabold text-slate-100' : 'font-extrabold text-slate-900'}`}>
+                    <div className="min-w-0 flex-1">
+                      <div className={`text-sm ${isDark ? 'font-extrabold text-slate-100' : 'font-extrabold text-slate-900'} truncate`}>
                         {item.name}
                       </div>
-                      {item.matchedAlias && (
-                        <div className={`text-[11px] font-semibold ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
-                          Epithet / Alias: &quot;{item.matchedAlias}&quot;
+                      {aliasDisplay && (
+                        <div className={`text-[11px] font-semibold truncate ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+                          <span className="opacity-75">Alias:</span> {aliasDisplay}
                         </div>
                       )}
                     </div>
                   </div>
                   {isAlreadyGuessed && (
-                    <span className="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded font-semibold">
+                    <span className="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded font-semibold shrink-0">
                       Guessed
                     </span>
                   )}

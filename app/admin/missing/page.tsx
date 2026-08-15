@@ -1,51 +1,40 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
-export default function AdminMissingDataPage() {
+function AdminMissingDataContent() {
+  const searchParams = useSearchParams();
+
+  const initialPage = parseInt(searchParams.get('page') || '1', 10) || 1;
+  const initialFilter = searchParams.get('filter') || 'all';
+  const initialQuery = searchParams.get('q') || '';
+
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
-  const [missingFilter, setMissingFilter] = useState('all');
+  const [query, setQuery] = useState(initialQuery);
+  const [missingFilter, setMissingFilter] = useState(initialFilter);
+  const [page, setPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Pagination state
-  const [page, setPage] = useState(1);
   const itemsPerPage = 18;
 
-  const loadMissingCharacters = () => {
-    setIsLoading(true);
-    fetch('/api/admin/characters?limit=1000')
-      .then((res) => res.json())
-      .then((data) => {
-        const all = data.characters || [];
-        const missing = all.filter(
-          (c: Character) =>
-            c.verification_status !== 'verified' &&
-            ((c.bounty === null || c.bounty === undefined) ||
-              !c.age ||
-              !c.height ||
-              !c.image_url ||
-              c.devil_fruit_type === 'Unknown' ||
-              !c.origin ||
-              c.origin === 'Unknown')
-        );
-        setAllCharacters(missing);
-        applyFilters(missing, query, missingFilter);
-      })
-      .catch(() => {
-        setAllCharacters([]);
-        setFilteredCharacters([]);
-      })
-      .finally(() => setIsLoading(false));
-  };
+  const updateUrl = useCallback((p: number, filter: string, q: string) => {
+    const params = new URLSearchParams();
+    if (p > 1) params.set('page', String(p));
+    if (filter && filter !== 'all') params.set('filter', filter);
+    if (q && q.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    const target = qs ? `/admin/missing?${qs}` : '/admin/missing';
+    window.history.replaceState(null, '', target);
+  }, []);
 
-  const applyFilters = (list: Character[], q: string, filter: string) => {
+  const applyFilters = useCallback((list: Character[], q: string, filter: string, targetPage?: number) => {
     let result = list;
 
     if (q.trim()) {
@@ -73,21 +62,74 @@ export default function AdminMissingDataPage() {
     }
 
     setFilteredCharacters(result);
-    setPage(1);
-  };
+    if (targetPage !== undefined) {
+      setPage(targetPage);
+    }
+  }, []);
+
+  const loadMissingCharacters = useCallback(() => {
+    setIsLoading(true);
+    fetch('/api/admin/characters?limit=1000')
+      .then((res) => res.json())
+      .then((data) => {
+        const all = data.characters || [];
+        const missing = all.filter(
+          (c: Character) =>
+            c.verification_status !== 'verified' &&
+            ((c.bounty === null || c.bounty === undefined) ||
+              !c.age ||
+              !c.height ||
+              !c.image_url ||
+              c.devil_fruit_type === 'Unknown' ||
+              !c.origin ||
+              c.origin === 'Unknown')
+        );
+        setAllCharacters(missing);
+        applyFilters(missing, initialQuery, initialFilter, initialPage);
+      })
+      .catch(() => {
+        setAllCharacters([]);
+        setFilteredCharacters([]);
+      })
+      .finally(() => setIsLoading(false));
+  }, [initialPage, initialFilter, initialQuery, applyFilters]);
 
   useEffect(() => {
     loadMissingCharacters();
-  }, []);
+  }, [loadMissingCharacters]);
+
+  // Handle browser back/forward history events
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const p = parseInt(params.get('page') || '1', 10) || 1;
+      const f = params.get('filter') || 'all';
+      const q = params.get('q') || '';
+      setQuery(q);
+      setMissingFilter(f);
+      applyFilters(allCharacters, q, f, p);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [allCharacters, applyFilters]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    applyFilters(allCharacters, query, missingFilter);
+    applyFilters(allCharacters, query, missingFilter, 1);
+    updateUrl(1, missingFilter, query);
   };
 
   const handleFilterChange = (filter: string) => {
     setMissingFilter(filter);
-    applyFilters(allCharacters, query, filter);
+    applyFilters(allCharacters, query, filter, 1);
+    updateUrl(1, filter, query);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    updateUrl(newPage, missingFilter, query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (char: Character) => {
@@ -102,7 +144,7 @@ export default function AdminMissingDataPage() {
       if (data.success) {
         const updated = allCharacters.filter((c) => c.id !== char.id);
         setAllCharacters(updated);
-        applyFilters(updated, query, missingFilter);
+        applyFilters(updated, query, missingFilter, page);
       } else {
         alert(data.error || 'Failed to delete');
       }
@@ -113,10 +155,11 @@ export default function AdminMissingDataPage() {
     }
   };
 
-  // Calculate pagination slice
+  // Calculate pagination slice with safe clamping
   const totalItems = filteredCharacters.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const startIndex = (page - 1) * itemsPerPage;
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const startIndex = (safePage - 1) * itemsPerPage;
   const currentCharacters = filteredCharacters.slice(startIndex, startIndex + itemsPerPage);
 
   if (isLoading) {
@@ -144,7 +187,7 @@ export default function AdminMissingDataPage() {
 
         {/* Page counter pill */}
         <div className="text-xs text-slate-300 bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-800 self-start sm:self-auto font-semibold">
-          Page <span className="font-black text-amber-400">{page}</span> of <span className="font-bold text-slate-100">{totalPages}</span> ({totalItems} total)
+          Page <span className="font-black text-amber-400">{safePage}</span> of <span className="font-bold text-slate-100">{totalPages}</span> ({totalItems} total)
         </div>
       </div>
 
@@ -157,7 +200,8 @@ export default function AdminMissingDataPage() {
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                applyFilters(allCharacters, e.target.value, missingFilter);
+                applyFilters(allCharacters, e.target.value, missingFilter, 1);
+                updateUrl(1, missingFilter, e.target.value);
               }}
               placeholder="Search missing characters by name, origin..."
               className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
@@ -268,11 +312,8 @@ export default function AdminMissingDataPage() {
 
             <div className="flex items-center space-x-2">
               <button
-                disabled={page <= 1}
-                onClick={() => {
-                  setPage((p) => Math.max(1, p - 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                disabled={safePage <= 1}
+                onClick={() => handlePageChange(Math.max(1, safePage - 1))}
                 className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 font-bold flex items-center space-x-1 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -285,23 +326,20 @@ export default function AdminMissingDataPage() {
                   let pageNum: number;
                   if (totalPages <= 5) {
                     pageNum = i + 1;
-                  } else if (page <= 3) {
+                  } else if (safePage <= 3) {
                     pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
+                  } else if (safePage >= totalPages - 2) {
                     pageNum = totalPages - 4 + i;
                   } else {
-                    pageNum = page - 2 + i;
+                    pageNum = safePage - 2 + i;
                   }
 
                   return (
                     <button
                       key={pageNum}
-                      onClick={() => {
-                        setPage(pageNum);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
+                      onClick={() => handlePageChange(pageNum)}
                       className={`w-8 h-8 rounded-lg font-bold transition cursor-pointer ${
-                        page === pageNum
+                        safePage === pageNum
                           ? 'gold-button text-slate-950'
                           : 'bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
@@ -313,11 +351,8 @@ export default function AdminMissingDataPage() {
               </div>
 
               <button
-                disabled={page >= totalPages}
-                onClick={() => {
-                  setPage((p) => Math.min(totalPages, p + 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                disabled={safePage >= totalPages}
+                onClick={() => handlePageChange(Math.min(totalPages, safePage + 1))}
                 className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 font-bold flex items-center space-x-1 cursor-pointer"
               >
                 <span>Next</span>
@@ -328,5 +363,20 @@ export default function AdminMissingDataPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function AdminMissingDataPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-sky-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading missing fields queue...</p>
+        </div>
+      }
+    >
+      <AdminMissingDataContent />
+    </Suspense>
   );
 }
