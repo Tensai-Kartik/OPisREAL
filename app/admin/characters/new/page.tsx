@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Save,
@@ -199,8 +199,20 @@ const SUGGESTED_ARCS = [
   'Elbaf',
 ];
 
-export default function AdminNewCharacterPage() {
+function NewCharacterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams?.get('from');
+
+  const handleGoBack = () => {
+    if (fromParam) {
+      router.push(fromParam);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/admin/characters');
+    }
+  };
 
   const [character, setCharacter] = useState<Partial<Character>>({
     name: '',
@@ -282,7 +294,10 @@ export default function AdminNewCharacterPage() {
         if (data.success && data.id) {
           setSaveSuccess(true);
           setTimeout(() => {
-            router.push(`/admin/characters/${data.id}`);
+            const redirectUrl = fromParam
+              ? `/admin/characters/${data.id}?from=${encodeURIComponent(fromParam)}`
+              : `/admin/characters/${data.id}`;
+            router.push(redirectUrl);
           }, 1000);
         } else {
           setErrorMsg(data.error || 'Failed to create character');
@@ -368,14 +383,16 @@ export default function AdminNewCharacterPage() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/95 backdrop-blur-md p-4 border border-slate-800 rounded-xl sticky top-20 z-30 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/95 backdrop-blur-md p-4 border border-slate-800 rounded-xl sticky top-[116px] z-30 shadow-2xl">
         <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/characters"
-            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 rounded-lg transition"
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition cursor-pointer"
+            title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <div>
             <h1 className="text-xl font-black text-slate-100 uppercase tracking-tight flex items-center space-x-2">
               <span>{character.name || 'New Canonical Character'}</span>
@@ -1205,7 +1222,7 @@ export default function AdminNewCharacterPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-36">
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-[116px]">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">
               Portrait Preview
             </h3>
@@ -1220,20 +1237,24 @@ export default function AdminNewCharacterPage() {
             {character.japanese_name && (
               <div className="text-xs text-amber-400 font-semibold">{character.japanese_name}</div>
             )}
-
-            <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || !character.name?.trim()}
-                className="w-full py-2.5 gold-button rounded-lg text-xs font-bold uppercase flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>Create & Verify Character</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminNewCharacterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs font-semibold">Loading character creator...</p>
+        </div>
+      }
+    >
+      <NewCharacterContent />
+    </Suspense>
   );
 }

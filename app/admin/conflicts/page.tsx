@@ -155,7 +155,7 @@ export default function AdminConflictsPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <Link
-                  href={`/admin/characters/${c.id}`}
+                  href={`/admin/characters/${c.id}?from=/admin/conflicts`}
                   className="px-3.5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1 shadow-sm"
                 >
                   <span>Resolve</span>

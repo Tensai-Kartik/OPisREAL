@@ -235,7 +235,7 @@ export default function AdminCharactersPage() {
                     <td className="p-4 text-right">
                       <div className="inline-flex items-center space-x-2">
                         <Link
-                          href={`/admin/characters/${c.id}`}
+                          href={`/admin/characters/${c.id}?from=/admin/characters`}
                           className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-lg font-bold uppercase transition"
                         >
                           <Edit3 className="w-3.5 h-3.5" />

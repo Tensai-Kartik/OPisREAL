@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Save,
@@ -204,9 +204,20 @@ const SUGGESTED_ARCS = [
   'Elbaf',
 ];
 
-export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function CharacterEditContent({ id }: { id: string }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams?.get('from');
+
+  const handleGoBack = () => {
+    if (fromParam) {
+      router.push(fromParam);
+    } else if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/admin/characters');
+    }
+  };
 
   const [character, setCharacter] = useState<Character | null>(null);
   const [evidence, setEvidence] = useState<CharacterFieldEvidence[]>([]);
@@ -293,7 +304,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       const res = await fetch(`/api/admin/characters/${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
-        router.push('/admin/characters');
+        handleGoBack();
       } else {
         alert(data.error || 'Failed to delete character');
       }
@@ -436,9 +447,13 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       <div className="p-6 bg-slate-900 border border-red-500/40 rounded-xl text-center max-w-md mx-auto my-12">
         <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
         <p className="text-slate-300 text-sm">{errorMsg || 'Character not found'}</p>
-        <Link href="/admin/characters" className="mt-4 inline-block px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
-          Back to List
-        </Link>
+        <button
+          type="button"
+          onClick={handleGoBack}
+          className="mt-4 inline-block px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase cursor-pointer"
+        >
+          Go Back
+        </button>
       </div>
     );
   }
@@ -446,14 +461,16 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Header Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/95 backdrop-blur-md p-4 border border-slate-800 rounded-xl sticky top-20 z-30 shadow-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-slate-900/95 backdrop-blur-md p-4 border border-slate-800 rounded-xl sticky top-[116px] z-30 shadow-2xl">
         <div className="flex items-center space-x-3">
-          <Link
-            href="/admin/characters"
-            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 rounded-lg transition"
+          <button
+            type="button"
+            onClick={handleGoBack}
+            className="p-2 bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-slate-200 rounded-lg transition cursor-pointer"
+            title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <div>
             <h1 className="text-xl font-black text-slate-100 uppercase tracking-tight flex items-center space-x-2">
               <span>{character.name}</span>
@@ -1323,7 +1340,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
 
         {/* Sidebar: Image Preview & Evidence Inspector */}
         <div className="space-y-6">
-          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-36">
+          <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-[116px]">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">
               Portrait Preview
             </h3>
@@ -1340,18 +1357,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
             )}
             <div className="text-[11px] text-slate-400 mt-2">
               Source: <span className="text-slate-200">{character.image_source_name || 'Wiki Dataset'}</span>
-            </div>
-
-            {/* Quick action buttons in sidebar */}
-            <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || isDeleting}
-                className="w-full py-2.5 gold-button rounded-lg text-xs font-bold uppercase flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
-              >
-                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>Save Fact Sheet</span>
-              </button>
             </div>
           </div>
 
@@ -1385,5 +1390,22 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs font-semibold">Loading character editor...</p>
+        </div>
+      }
+    >
+      <CharacterEditContent id={id} />
+    </Suspense>
   );
 }

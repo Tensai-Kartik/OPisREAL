@@ -253,7 +253,7 @@ export default function AdminMissingDataPage() {
 
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
                     <Link
-                      href={`/admin/characters/${c.id}`}
+                      href={`/admin/characters/${c.id}?from=/admin/missing`}
                       className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-1.5 transition"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
