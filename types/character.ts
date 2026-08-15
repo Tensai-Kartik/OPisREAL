@@ -29,7 +29,7 @@ export type DevilFruitType =
   | 'Other'
   | string;
 
-export type HakiType = 'Observation' | 'Armament' | 'Conqueror' | 'Other';
+export type HakiType = 'Observation' | 'Armament' | 'Conqueror' | 'Other' | string;
 
 export interface CharacterAlias {
   id?: string;

@@ -1,16 +1,13 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Save,
-  ShieldCheck,
-  Eye,
   Plus,
   X,
-  Trash2,
   CheckCircle2,
   AlertTriangle,
   Loader2,
@@ -22,11 +19,9 @@ import {
   Sparkles,
   Zap,
   Flame,
-  Globe,
   Sliders,
-  Type,
 } from 'lucide-react';
-import { Character, CharacterFieldEvidence, HakiType } from '@/types/character';
+import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
 const PRESET_DEVIL_FRUIT_TYPES = [
@@ -204,12 +199,32 @@ const SUGGESTED_ARCS = [
   'Elbaf',
 ];
 
-export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function AdminNewCharacterPage() {
   const router = useRouter();
 
-  const [character, setCharacter] = useState<Character | null>(null);
-  const [evidence, setEvidence] = useState<CharacterFieldEvidence[]>([]);
+  const [character, setCharacter] = useState<Partial<Character>>({
+    name: '',
+    japanese_name: '',
+    alias: '',
+    gender: 'Male',
+    race: 'Human',
+    status: 'Alive',
+    bounty: null,
+    age: null,
+    height: null,
+    origin: 'East Blue',
+    first_appearance: '',
+    first_arc: 'Romance Dawn',
+    birthday: '',
+    blood_type: '',
+    description: '',
+    devil_fruit_name: '',
+    devil_fruit_type: 'None',
+    devil_fruit_model: '',
+    image_url: '',
+    verification_status: 'verified',
+  });
+
   const [affiliations, setAffiliations] = useState<string[]>([]);
   const [occupations, setOccupations] = useState<string[]>([]);
   const [hakiList, setHakiList] = useState<{ haki_type: string; custom_haki?: string }[]>([]);
@@ -227,105 +242,35 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
   const [customGenderMode, setCustomGenderMode] = useState(false);
   const [customStatusMode, setCustomStatusMode] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [showEvidence, setShowEvidence] = useState(false);
 
-  useEffect(() => {
-    setIsLoading(true);
-    fetch(`/api/admin/characters/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) setErrorMsg(data.error);
-        else {
-          const char = data.character;
-          if (!char.alias && char.romanized_name) {
-            char.alias = char.romanized_name;
-          }
-          setCharacter(char);
-          setEvidence(data.evidence || []);
-          setAffiliations(data.affiliations || []);
-          setOccupations(data.occupations || []);
-          setHakiList(data.haki || []);
-
-          // Check if current values are custom (not in standard presets)
-          if (char.devil_fruit_type && !PRESET_DEVIL_FRUIT_TYPES.includes(char.devil_fruit_type)) {
-            setCustomFruitMode(true);
-          }
-          if (char.race && !PRESET_RACES.includes(char.race)) {
-            setCustomRaceMode(true);
-          }
-          if (char.gender && !PRESET_GENDERS.includes(char.gender)) {
-            setCustomGenderMode(true);
-          }
-          if (char.status && !PRESET_STATUSES.includes(char.status)) {
-            setCustomStatusMode(true);
-          }
-
-          // Format aliases from table or character.alias string
-          const loadedAliases = data.aliases || [];
-          if (loadedAliases.length === 0 && char.alias) {
-            const parsed = char.alias
-              .split(/,\s*/)
-              .filter(Boolean)
-              .map((a: string) => ({ alias: a.trim(), alias_type: 'alias' }));
-            setAliases(parsed);
-          } else {
-            setAliases(loadedAliases);
-          }
-        }
-      })
-      .catch(() => setErrorMsg('Failed to fetch character details.'))
-      .finally(() => setIsLoading(false));
-  }, [id]);
-
-  const handleDelete = async () => {
-    if (!character) return;
-    if (!confirm(`Are you sure you want to permanently delete "${character.name}"? This action cannot be undone.`)) {
+  const handleSave = () => {
+    if (!character.name?.trim()) {
+      setErrorMsg('Character name is required');
       return;
     }
 
-    setIsDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/characters/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        router.push('/admin/characters');
-      } else {
-        alert(data.error || 'Failed to delete character');
-      }
-    } catch {
-      alert('Network error deleting character');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleSave = () => {
-    if (!character) return;
     setIsSaving(true);
-    setSaveSuccess(false);
+    setErrorMsg(null);
 
     const aliasString = aliases.map((a) => a.alias).filter(Boolean).join(', ');
 
-    const verifiedPayload = {
+    const payload = {
       ...character,
       alias: aliasString || character.alias || null,
       romanized_name: aliasString || character.alias || null,
-      verification_status: 'verified' as const,
+      verification_status: 'verified',
       is_active: true,
       is_canon: true,
     };
-    setCharacter(verifiedPayload);
 
-    fetch(`/api/admin/characters/${id}`, {
-      method: 'PUT',
+    fetch('/api/admin/characters', {
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        character: verifiedPayload,
+        character: payload,
         affiliations,
         occupations,
         haki: hakiList,
@@ -334,14 +279,16 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
+        if (data.success && data.id) {
           setSaveSuccess(true);
-          setTimeout(() => setSaveSuccess(false), 3000);
+          setTimeout(() => {
+            router.push(`/admin/characters/${data.id}`);
+          }, 1000);
         } else {
-          setErrorMsg(data.error || 'Failed to save');
+          setErrorMsg(data.error || 'Failed to create character');
         }
       })
-      .catch(() => setErrorMsg('Save error'))
+      .catch(() => setErrorMsg('Network error creating character'))
       .finally(() => setIsSaving(false));
   };
 
@@ -375,12 +322,10 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
     if (!aliases.some((a) => a.alias.toLowerCase() === trimmed.toLowerCase())) {
       const updated = [...aliases, { alias: trimmed, alias_type: 'alias' }];
       setAliases(updated);
-      if (character) {
-        setCharacter({
-          ...character,
-          alias: updated.map((a) => a.alias).join(', '),
-        });
-      }
+      setCharacter({
+        ...character,
+        alias: updated.map((a) => a.alias).join(', '),
+      });
     }
     setNewAlias('');
   };
@@ -388,12 +333,10 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
   const removeAlias = (index: number) => {
     const updated = aliases.filter((_, idx) => idx !== index);
     setAliases(updated);
-    if (character) {
-      setCharacter({
-        ...character,
-        alias: updated.map((a) => a.alias).join(', '),
-      });
-    }
+    setCharacter({
+      ...character,
+      alias: updated.map((a) => a.alias).join(', '),
+    });
   };
 
   const addAffiliation = (aff: string) => {
@@ -422,27 +365,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
     setOccupations(occupations.filter((_, idx) => idx !== index));
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-        <p className="text-slate-400 text-xs">Loading character editor...</p>
-      </div>
-    );
-  }
-
-  if (errorMsg || !character) {
-    return (
-      <div className="p-6 bg-slate-900 border border-red-500/40 rounded-xl text-center max-w-md mx-auto my-12">
-        <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
-        <p className="text-slate-300 text-sm">{errorMsg || 'Character not found'}</p>
-        <Link href="/admin/characters" className="mt-4 inline-block px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
-          Back to List
-        </Link>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Top Header Controls */}
@@ -456,38 +378,20 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
           </Link>
           <div>
             <h1 className="text-xl font-black text-slate-100 uppercase tracking-tight flex items-center space-x-2">
-              <span>{character.name}</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold">
-                {character.verification_status}
-              </span>
+              <span>{character.name || 'New Canonical Character'}</span>
             </h1>
-            <p className="text-xs text-slate-400">Canonical Character Fact & Gameplay Fact Editor</p>
+            <p className="text-xs text-slate-400">Add a new One Piece character with custom attributes</p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2.5">
           <button
-            onClick={() => setShowEvidence(!showEvidence)}
-            className="px-3.5 py-2 bg-slate-950 border border-amber-600/40 text-amber-400 hover:bg-slate-800 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 cursor-pointer transition"
-          >
-            <Eye className="w-4 h-4" />
-            <span>{showEvidence ? 'Hide Sources' : 'Inspect Evidence'}</span>
-          </button>
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting || isSaving}
-            className="px-3.5 py-2 bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-200 hover:text-white rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-            <span>Delete</span>
-          </button>
-          <button
             onClick={handleSave}
-            disabled={isSaving || isDeleting}
+            disabled={isSaving || !character.name?.trim()}
             className="px-5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            <span>Save Verification</span>
+            <span>Create & Verify Character</span>
           </button>
         </div>
       </div>
@@ -495,12 +399,19 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
       {saveSuccess && (
         <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
           <CheckCircle2 className="w-4 h-4" />
-          <span>Character canonical record & game facts saved successfully!</span>
+          <span>Character created successfully! Redirecting...</span>
+        </div>
+      )}
+
+      {errorMsg && (
+        <div className="p-4 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-bold flex items-center space-x-2">
+          <AlertTriangle className="w-4 h-4" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Form Fields (2 columns) */}
+        {/* Main Form Fields */}
         <div className="lg:col-span-2 space-y-6">
           {/* Identity & Portrait */}
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
@@ -515,6 +426,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.name || ''}
                   onChange={(e) => setCharacter({ ...character, name: e.target.value })}
+                  placeholder="e.g. Yamato, Kozuki Momonosuke"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-bold focus:border-amber-500"
                 />
               </div>
@@ -524,7 +436,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.japanese_name || ''}
                   onChange={(e) => setCharacter({ ...character, japanese_name: e.target.value })}
-                  placeholder="e.g. ロロノア・ゾロ"
+                  placeholder="e.g. ヤマト"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                 />
               </div>
@@ -532,17 +444,17 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 <label className="block text-slate-400 font-semibold mb-1">Alias / Epithets String (Comma-Separated)</label>
                 <input
                   type="text"
-                  value={character.alias || character.romanized_name || ''}
+                  value={character.alias || ''}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setCharacter({ ...character, alias: val, romanized_name: val });
+                    setCharacter({ ...character, alias: val });
                     const split = val
                       .split(/,\s*/)
                       .filter(Boolean)
                       .map((a) => ({ alias: a.trim(), alias_type: 'alias' }));
                     setAliases(split);
                   }}
-                  placeholder="e.g. Pirate Hunter, King of Hell, Zorojuro, Marimo"
+                  placeholder="e.g. Oni Princess, Son of Kaido, Oden"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-amber-300 font-semibold focus:border-amber-500"
                 />
               </div>
@@ -551,7 +463,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                 <div className="flex items-center space-x-3">
                   <CharacterAvatar
                     src={character.image_url}
-                    name={character.name}
+                    name={character.name || 'New'}
                     size="lg"
                     className="border border-amber-600/50 shrink-0"
                   />
@@ -578,9 +490,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
               <Tag className="w-4 h-4 text-amber-400" />
               <span>Aliases & Epithets Manager ({aliases.length})</span>
             </h3>
-            <p className="text-xs text-slate-400">
-              Users can search by any of these aliases in the game search bar to guess this character.
-            </p>
 
             <div className="flex flex-wrap gap-2 min-h-[36px] p-2.5 bg-slate-950 border border-slate-800 rounded-lg">
               {aliases.length === 0 ? (
@@ -596,7 +505,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                       type="button"
                       onClick={() => removeAlias(idx)}
                       className="text-amber-400/60 hover:text-red-400 ml-1 cursor-pointer"
-                      title="Remove alias"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
@@ -616,7 +524,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     addAlias(newAlias);
                   }
                 }}
-                placeholder="Type a new alias and press Enter (e.g. 'King of Hell')..."
+                placeholder="Type a new alias and press Enter..."
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-amber-500"
               />
               <button
@@ -655,7 +563,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.devil_fruit_name || ''}
                   onChange={(e) => setCharacter({ ...character, devil_fruit_name: e.target.value })}
-                  placeholder="e.g. Hito Hito no Mi, Model: Nika, SMILE Fruit"
+                  placeholder="e.g. Inu Inu no Mi, Model: Okuchi no Makami, SMILE Fruit"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                 />
               </div>
@@ -679,12 +587,10 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                         type="button"
                         onClick={() => setCustomFruitMode(false)}
                         className="px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-slate-700 rounded-lg text-[10px] font-bold"
-                        title="Back to dropdown"
                       >
                         Presets
                       </button>
                     </div>
-                    {/* Quick custom suggestions */}
                     <div className="flex flex-wrap gap-1 pt-1">
                       {['Artificial Zoan', 'SMILE', 'Special Paramecia', 'Mythical Zoan', 'Ancient Zoan', 'Zoan', 'Paramecia', 'Logia'].map((s) => (
                         <button
@@ -699,27 +605,22 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     </div>
                   </div>
                 ) : (
-                  <div className="flex gap-1.5">
-                    <select
-                      value={character.devil_fruit_type || 'None'}
-                      onChange={(e) => {
-                        if (e.target.value === '__custom__') {
-                          setCustomFruitMode(true);
-                        } else {
-                          setCharacter({ ...character, devil_fruit_type: e.target.value });
-                        }
-                      }}
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold focus:border-amber-500"
-                    >
-                      {PRESET_DEVIL_FRUIT_TYPES.map((type) => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                      {!PRESET_DEVIL_FRUIT_TYPES.includes(character.devil_fruit_type || '') && character.devil_fruit_type && (
-                        <option value={character.devil_fruit_type}>{character.devil_fruit_type} (Custom)</option>
-                      )}
-                      <option value="__custom__">+ Add Custom Type...</option>
-                    </select>
-                  </div>
+                  <select
+                    value={character.devil_fruit_type || 'None'}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setCustomFruitMode(true);
+                      } else {
+                        setCharacter({ ...character, devil_fruit_type: e.target.value });
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold focus:border-amber-500"
+                  >
+                    {PRESET_DEVIL_FRUIT_TYPES.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                    <option value="__custom__">+ Add Custom Type...</option>
+                  </select>
                 )}
               </div>
 
@@ -729,7 +630,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.devil_fruit_model || ''}
                   onChange={(e) => setCharacter({ ...character, devil_fruit_model: e.target.value })}
-                  placeholder="e.g. Nika, Seiryu, Phoenix, Leopard, Mammoth, etc."
+                  placeholder="e.g. Okuchi no Makami, Seiryu, Nika..."
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 text-xs"
                 />
               </div>
@@ -788,7 +689,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                         type="button"
                         onClick={() => removeHaki(idx)}
                         className="text-amber-400/60 hover:text-red-400 ml-1 cursor-pointer"
-                        title="Remove Haki"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -842,7 +742,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
             </div>
           </div>
 
-          {/* Physical Attributes & Status (with Custom Race, Gender, Status) */}
+          {/* Physical Attributes & Status */}
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl space-y-4 shadow-lg">
             <h3 className="text-sm font-bold text-amber-400 uppercase tracking-wider border-b border-slate-800 pb-2 flex items-center space-x-2">
               <BookOpen className="w-4 h-4 text-amber-400" />
@@ -900,9 +800,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     {PRESET_RACES.map((race) => (
                       <option key={race} value={race}>{race}</option>
                     ))}
-                    {!PRESET_RACES.includes(character.race || '') && character.race && (
-                      <option value={character.race}>{character.race} (Custom)</option>
-                    )}
                     <option value="__custom__">+ Add Custom Race...</option>
                   </select>
                 )}
@@ -944,9 +841,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     {PRESET_GENDERS.map((g) => (
                       <option key={g} value={g}>{g}</option>
                     ))}
-                    {!PRESET_GENDERS.includes(character.gender || '') && character.gender && (
-                      <option value={character.gender}>{character.gender} (Custom)</option>
-                    )}
                     <option value="__custom__">+ Add Custom Gender...</option>
                   </select>
                 )}
@@ -970,7 +864,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     type="text"
                     value={character.status || ''}
                     onChange={(e) => setCharacter({ ...character, status: e.target.value })}
-                    placeholder="e.g. Imprisoned, Frozen, Deceased..."
+                    placeholder="e.g. Imprisoned, Frozen..."
                     className="w-full bg-slate-950 border border-amber-500/50 rounded-lg p-2.5 text-amber-300 font-bold focus:border-amber-400"
                   />
                 ) : (
@@ -988,9 +882,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     {PRESET_STATUSES.map((s) => (
                       <option key={s} value={s}>{s}</option>
                     ))}
-                    {!PRESET_STATUSES.includes(character.status || '') && character.status && (
-                      <option value={character.status}>{character.status} (Custom)</option>
-                    )}
                     <option value="__custom__">+ Add Custom Status...</option>
                   </select>
                 )}
@@ -1037,13 +928,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   }
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-amber-300 font-bold focus:border-amber-500"
                 />
-                <div className="text-[10px] text-slate-500 mt-1">
-                  {character.bounty === 0
-                    ? 'Status: None (0 Berries)'
-                    : character.bounty === null || character.bounty === undefined
-                      ? 'Status: Unknown / Undisclosed'
-                      : `Status: ${character.bounty.toLocaleString()} Berries`}
-                </div>
               </div>
 
               {/* Age */}
@@ -1053,7 +937,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="number"
                   value={character.age ?? ''}
                   onChange={(e) => setCharacter({ ...character, age: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="e.g. 19"
+                  placeholder="e.g. 28"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
                 />
               </div>
@@ -1065,7 +949,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="number"
                   value={character.height ?? ''}
                   onChange={(e) => setCharacter({ ...character, height: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="e.g. 181"
+                  placeholder="e.g. 263"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
                 />
               </div>
@@ -1112,7 +996,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     addAffiliation(newAffiliation);
                   }
                 }}
-                placeholder="Type any crew, organization, or pirate group..."
+                placeholder="Type any crew, organization, or group name..."
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-sky-500"
               />
               <button
@@ -1126,7 +1010,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
               </button>
             </div>
 
-            {/* Quick Suggestions */}
             <div>
               <span className="text-[11px] text-slate-400 font-semibold block mb-1.5">Quick Suggestions:</span>
               <div className="flex flex-wrap gap-1.5">
@@ -1184,7 +1067,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     addOccupation(newOccupation);
                   }
                 }}
-                placeholder="Type any career, rank, or position (e.g. 'Swordsman', 'Admiral')..."
+                placeholder="Type any career, rank, or position..."
                 className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-100 focus:border-emerald-500"
               />
               <button
@@ -1198,7 +1081,6 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
               </button>
             </div>
 
-            {/* Quick Suggestions */}
             <div>
               <span className="text-[11px] text-slate-400 font-semibold block mb-1.5">Quick Suggestions:</span>
               <div className="flex flex-wrap gap-1.5">
@@ -1230,7 +1112,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     type="text"
                     value={character.origin || ''}
                     onChange={(e) => setCharacter({ ...character, origin: e.target.value })}
-                    placeholder="e.g. East Blue, Wano Country, Elbaf..."
+                    placeholder="e.g. East Blue, Wano Country..."
                     className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                   />
                   <select
@@ -1254,7 +1136,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                   type="text"
                   value={character.first_appearance || ''}
                   onChange={(e) => setCharacter({ ...character, first_appearance: e.target.value })}
-                  placeholder="e.g. Chapter 3"
+                  placeholder="e.g. Chapter 983"
                   className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                 />
               </div>
@@ -1266,7 +1148,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     type="text"
                     value={character.first_arc || ''}
                     onChange={(e) => setCharacter({ ...character, first_arc: e.target.value })}
-                    placeholder="e.g. Romance Dawn, Egghead..."
+                    placeholder="e.g. Wano Country"
                     className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 focus:border-amber-500"
                   />
                   <select
@@ -1291,7 +1173,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
                     type="text"
                     value={character.birthday || ''}
                     onChange={(e) => setCharacter({ ...character, birthday: e.target.value })}
-                    placeholder="e.g. November 11"
+                    placeholder="e.g. November 3"
                     className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100"
                   />
                 </div>
@@ -1321,7 +1203,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
           </div>
         </div>
 
-        {/* Sidebar: Image Preview & Evidence Inspector */}
+        {/* Sidebar */}
         <div className="space-y-6">
           <div className="p-6 bg-slate-900 border border-slate-800 rounded-xl text-center shadow-lg sticky top-36">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">
@@ -1329,59 +1211,27 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
             </h3>
             <div className="w-40 h-40 mx-auto rounded-xl overflow-hidden border-2 border-amber-600/40 bg-slate-950 mb-3 shadow-lg flex items-center justify-center">
               <img
-                src={character.image_url || 'https://via.placeholder.com/150?text=OP'}
-                alt={character.name}
+                src={character.image_url || 'https://via.placeholder.com/150?text=New+OP'}
+                alt={character.name || 'New Character'}
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="font-extrabold text-slate-100 text-sm">{character.name}</div>
+            <div className="font-extrabold text-slate-100 text-sm">{character.name || 'Character Name'}</div>
             {character.japanese_name && (
               <div className="text-xs text-amber-400 font-semibold">{character.japanese_name}</div>
             )}
-            <div className="text-[11px] text-slate-400 mt-2">
-              Source: <span className="text-slate-200">{character.image_source_name || 'Wiki Dataset'}</span>
-            </div>
 
-            {/* Quick action buttons in sidebar */}
             <div className="mt-4 pt-4 border-t border-slate-800 space-y-2">
               <button
                 onClick={handleSave}
-                disabled={isSaving || isDeleting}
+                disabled={isSaving || !character.name?.trim()}
                 className="w-full py-2.5 gold-button rounded-lg text-xs font-bold uppercase flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
               >
                 {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>Save Fact Sheet</span>
+                <span>Create & Verify Character</span>
               </button>
             </div>
           </div>
-
-          {/* Evidence Inspector Box */}
-          {showEvidence && (
-            <div className="p-5 bg-slate-900 border border-amber-600/50 rounded-xl space-y-3 shadow-xl">
-              <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Source Evidence Inspector</span>
-              </h3>
-
-              <div className="space-y-2 max-h-80 overflow-y-auto pr-1 text-xs">
-                {evidence.length === 0 ? (
-                  <p className="text-slate-500 italic">No external source evidence logged yet.</p>
-                ) : (
-                  evidence.map((ev) => (
-                    <div key={ev.id} className="p-2.5 bg-slate-950 rounded-lg border border-slate-800 space-y-1">
-                      <div className="flex justify-between font-bold text-slate-200">
-                        <span className="capitalize">{ev.field_name}</span>
-                        <span className="text-amber-400">{ev.source_id}</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Value: <span className="text-slate-100">{ev.normalized_value}</span>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

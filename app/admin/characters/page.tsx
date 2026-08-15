@@ -111,6 +111,14 @@ export default function AdminCharactersPage() {
             Curate facts, edit multi-select attributes, inspect evidence, or delete characters.
           </p>
         </div>
+
+        <Link
+          href="/admin/characters/new"
+          className="px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 self-start sm:self-auto shadow-md"
+        >
+          <span className="text-base leading-none font-black">+</span>
+          <span>Add New Character</span>
+        </Link>
       </div>
 
       {/* Success Notification */}
