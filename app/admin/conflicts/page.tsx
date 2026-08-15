@@ -1,31 +1,25 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, CheckCircle2, Loader2, ArrowRight, Search, Trash2 } from 'lucide-react';
 import { Character } from '@/types/character';
 
-export default function AdminConflictsPage() {
+function AdminConflictsContent() {
+  const searchParams = useSearchParams();
+  const initialQuery = searchParams?.get('q') || '';
+
   const [allConflicts, setAllConflicts] = useState<Character[]>([]);
   const [filteredConflicts, setFilteredConflicts] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const loadConflicts = () => {
-    setIsLoading(true);
-    fetch('/api/admin/characters?status=conflict&limit=100')
-      .then((res) => res.json())
-      .then((data) => {
-        const list = data.characters || [];
-        setAllConflicts(list);
-        applySearch(list, query);
-      })
-      .catch(() => {
-        setAllConflicts([]);
-        setFilteredConflicts([]);
-      })
-      .finally(() => setIsLoading(false));
+  const updateUrl = (q: string) => {
+    if (typeof window === 'undefined') return;
+    const newUrl = q.trim() ? `/admin/conflicts?q=${encodeURIComponent(q.trim())}` : '/admin/conflicts';
+    window.history.replaceState(null, '', newUrl);
   };
 
   const applySearch = (list: Character[], q: string) => {
@@ -43,12 +37,29 @@ export default function AdminConflictsPage() {
     setFilteredConflicts(result);
   };
 
+  const loadConflicts = () => {
+    setIsLoading(true);
+    fetch('/api/admin/characters?status=conflict&limit=100')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = data.characters || [];
+        setAllConflicts(list);
+        applySearch(list, initialQuery);
+      })
+      .catch(() => {
+        setAllConflicts([]);
+        setFilteredConflicts([]);
+      })
+      .finally(() => setIsLoading(false));
+  };
+
   useEffect(() => {
     loadConflicts();
   }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    updateUrl(query);
     applySearch(allConflicts, query);
   };
 
@@ -74,6 +85,8 @@ export default function AdminConflictsPage() {
       setDeletingId(null);
     }
   };
+
+  const currentFromUrl = `/admin/conflicts${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''}`;
 
   if (isLoading) {
     return (
@@ -155,7 +168,7 @@ export default function AdminConflictsPage() {
 
               <div className="flex items-center gap-2 shrink-0">
                 <Link
-                  href={`/admin/characters/${c.id}?from=/admin/conflicts`}
+                  href={`/admin/characters/${c.id}?from=${encodeURIComponent(currentFromUrl)}`}
                   className="px-3.5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1 shadow-sm"
                 >
                   <span>Resolve</span>
@@ -179,5 +192,20 @@ export default function AdminConflictsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminConflictsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Checking conflict queue...</p>
+        </div>
+      }
+    >
+      <AdminConflictsContent />
+    </Suspense>
   );
 }

@@ -1,16 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, Filter, Edit3, CheckCircle2, AlertTriangle, HelpCircle, Loader2, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Search, Filter, Edit3, CheckCircle2, AlertTriangle, HelpCircle, Loader2, ChevronLeft, ChevronRight, Trash2, Plus } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
-export default function AdminCharactersPage() {
+function AdminCharactersContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialPage = parseInt(searchParams?.get('page') || '1', 10) || 1;
+  const initialStatus = searchParams?.get('status') || 'all';
+  const initialQuery = searchParams?.get('q') || '';
+
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState(initialQuery);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [page, setPage] = useState(initialPage);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -18,10 +26,21 @@ export default function AdminCharactersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const loadCharacters = () => {
+  const updateUrl = (p: number, s: string, q: string) => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+    if (p > 1) params.set('page', p.toString());
+    if (s && s !== 'all') params.set('status', s);
+    if (q.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    const newUrl = qs ? `/admin/characters?${qs}` : '/admin/characters';
+    window.history.replaceState(null, '', newUrl);
+  };
+
+  const loadCharacters = (targetPage = page, targetStatus = statusFilter, targetQuery = query) => {
     setIsLoading(true);
     setErrorMsg(null);
-    const url = `/api/admin/characters?q=${encodeURIComponent(query)}&status=${statusFilter}&page=${page}&limit=15`;
+    const url = `/api/admin/characters?q=${encodeURIComponent(targetQuery)}&status=${targetStatus}&page=${targetPage}&limit=15`;
 
     fetch(url)
       .then((res) => res.json())
@@ -39,13 +58,26 @@ export default function AdminCharactersPage() {
   };
 
   useEffect(() => {
-    loadCharacters();
+    loadCharacters(page, statusFilter, query);
   }, [page, statusFilter]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
-    loadCharacters();
+    updateUrl(1, statusFilter, query);
+    loadCharacters(1, statusFilter, query);
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    setStatusFilter(newStatus);
+    setPage(1);
+    updateUrl(1, newStatus, query);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    updateUrl(newPage, statusFilter, query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteCharacter = async (char: Character) => {
@@ -99,45 +131,58 @@ export default function AdminCharactersPage() {
     }
   };
 
+  const currentFromUrl = `/admin/characters?page=${page}&status=${statusFilter}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ''}`;
+
   return (
     <div className="space-y-6">
-      {/* Title Header */}
+      {/* Title & Stats */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-100 uppercase tracking-tight">
-            Canonical Characters ({totalCount})
+            One Piece Characters Dataset ({totalCount.toLocaleString()})
           </h1>
           <p className="text-slate-400 text-xs mt-1">
-            Curate facts, edit multi-select attributes, inspect evidence, or delete characters.
+            Search, filter, inspect source evidence, and curate canonical facts.
           </p>
         </div>
 
-        <Link
-          href="/admin/characters/new"
-          className="px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 self-start sm:self-auto shadow-md"
-        >
-          <span className="text-base leading-none font-black">+</span>
-          <span>Add New Character</span>
-        </Link>
+        <div className="flex items-center space-x-3">
+          <Link
+            href={`/admin/characters/new?from=${encodeURIComponent(currentFromUrl)}`}
+            className="px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase tracking-wider shadow-lg flex items-center space-x-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add New Character</span>
+          </Link>
+          <div className="text-xs text-slate-300 bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-800 self-start sm:self-auto font-semibold">
+            Showing <span className="font-bold text-amber-400">{characters.length}</span> on page
+          </div>
+        </div>
       </div>
 
-      {/* Success Notification */}
       {successMsg && (
-        <div className="p-4 bg-green-950/60 border border-green-500/40 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
-          <CheckCircle2 className="w-4 h-4 text-green-400 shrink-0" />
+        <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2">
+          <CheckCircle2 className="w-4 h-4" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Filter and Search Bar */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4">
+      {errorMsg && (
+        <div className="p-4 bg-red-950/80 border border-red-500/50 rounded-xl text-red-300 text-xs font-bold flex items-center space-x-2">
+          <AlertTriangle className="w-4 h-4" />
+          <span>{errorMsg}</span>
+        </div>
+      )}
+
+      {/* Search & Filters */}
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
         <form onSubmit={handleSearchSubmit} className="relative w-full md:w-96 flex items-center gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search by character name..."
+              placeholder="Search by canonical name, japanese name, fruit..."
               className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
@@ -152,49 +197,38 @@ export default function AdminCharactersPage() {
 
         <div className="flex items-center space-x-3 w-full md:w-auto">
           <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold">
-            <Filter className="w-4 h-4 text-amber-500" />
-            <span>Filter:</span>
+            <Filter className="w-4 h-4 text-amber-400" />
+            <span>Verification:</span>
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-            }}
-            className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-amber-500"
+            onChange={(e) => handleStatusChange(e.target.value)}
+            className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-amber-500 cursor-pointer"
           >
             <option value="all">All Statuses</option>
             <option value="verified">Verified Only</option>
-            <option value="sourced">Sourced Only</option>
             <option value="conflict">Conflicts Only</option>
+            <option value="unverified">Unverified Only</option>
           </select>
         </div>
       </div>
 
-      {/* Table State */}
+      {/* Characters Table */}
       {isLoading ? (
         <div className="flex flex-col items-center justify-center min-h-[300px]">
           <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
-          <p className="text-slate-400 text-xs">Loading character list...</p>
-        </div>
-      ) : errorMsg ? (
-        <div className="p-6 bg-slate-900 border border-red-500/40 rounded-xl text-center">
-          <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
-          <p className="text-slate-300 text-sm">{errorMsg}</p>
-          <button onClick={loadCharacters} className="mt-3 px-4 py-2 gold-button rounded-lg text-xs font-bold uppercase">
-            Retry
-          </button>
+          <p className="text-slate-400 text-xs">Querying characters repository...</p>
         </div>
       ) : characters.length === 0 ? (
         <div className="p-12 bg-slate-900 border border-slate-800 rounded-xl text-center text-slate-400 text-sm">
-          No characters match the current query or filter.
+          No characters match your search filters.
         </div>
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="bg-slate-950 text-amber-400 font-bold uppercase border-b border-slate-800">
+            <table className="w-full text-left text-xs text-slate-200">
+              <thead className="bg-slate-950/80 uppercase font-black tracking-wider text-slate-400 border-b border-slate-800">
+                <tr>
                   <th className="p-4">Character</th>
                   <th className="p-4">Devil Fruit</th>
                   <th className="p-4">Origin</th>
@@ -235,7 +269,7 @@ export default function AdminCharactersPage() {
                     <td className="p-4 text-right">
                       <div className="inline-flex items-center space-x-2">
                         <Link
-                          href={`/admin/characters/${c.id}?from=/admin/characters`}
+                          href={`/admin/characters/${c.id}?from=${encodeURIComponent(currentFromUrl)}`}
                           className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-lg font-bold uppercase transition"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -270,14 +304,14 @@ export default function AdminCharactersPage() {
             <div className="flex items-center space-x-2">
               <button
                 disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => handlePageChange(Math.max(1, page - 1))}
                 className="p-2 bg-slate-900 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <button
                 disabled={page >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
                 className="p-2 bg-slate-900 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 cursor-pointer"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -287,5 +321,20 @@ export default function AdminCharactersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminCharactersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-amber-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading characters repository...</p>
+        </div>
+      }
+    >
+      <AdminCharactersContent />
+    </Suspense>
   );
 }

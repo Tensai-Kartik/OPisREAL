@@ -1,53 +1,42 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
-export default function AdminMissingDataPage() {
+function AdminMissingDataContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  const initialPage = parseInt(searchParams?.get('page') || '1', 10) || 1;
+  const initialFilter = searchParams?.get('filter') || 'all';
+  const initialQuery = searchParams?.get('q') || '';
+
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([]);
-  const [query, setQuery] = useState('');
-  const [missingFilter, setMissingFilter] = useState('all');
+  const [query, setQuery] = useState(initialQuery);
+  const [missingFilter, setMissingFilter] = useState(initialFilter);
+  const [page, setPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Pagination state
-  const [page, setPage] = useState(1);
   const itemsPerPage = 18;
 
-  const loadMissingCharacters = () => {
-    setIsLoading(true);
-    fetch('/api/admin/characters?limit=2000')
-      .then((res) => res.json())
-      .then((data) => {
-        const all = data.characters || [];
-        const missing = all.filter(
-          (c: Character) =>
-            c.verification_status !== 'verified' &&
-            ((c.bounty === null || c.bounty === undefined) ||
-              !c.age ||
-              !c.height ||
-              !c.image_url ||
-              c.devil_fruit_type === 'Unknown' ||
-              !c.origin ||
-              c.origin === 'Unknown' ||
-              (!c.first_appearance && !c.first_arc) ||
-              (!c.alias && !c.romanized_name))
-        );
-        setAllCharacters(missing);
-        applyFilters(missing, query, missingFilter);
-      })
-      .catch(() => {
-        setAllCharacters([]);
-        setFilteredCharacters([]);
-      })
-      .finally(() => setIsLoading(false));
+  const updateUrl = (p: number, f: string, q: string) => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams();
+    if (p > 1) params.set('page', p.toString());
+    if (f && f !== 'all') params.set('filter', f);
+    if (q.trim()) params.set('q', q.trim());
+    const qs = params.toString();
+    const newUrl = qs ? `/admin/missing?${qs}` : '/admin/missing';
+    window.history.replaceState(null, '', newUrl);
   };
 
-  const applyFilters = (list: Character[], q: string, filter: string) => {
+  const applyFilters = (list: Character[], q: string, filter: string, targetPage?: number) => {
     let result = list;
 
     if (q.trim()) {
@@ -80,7 +69,39 @@ export default function AdminMissingDataPage() {
     }
 
     setFilteredCharacters(result);
-    setPage(1);
+    if (targetPage !== undefined) {
+      setPage(targetPage);
+      updateUrl(targetPage, filter, q);
+    }
+  };
+
+  const loadMissingCharacters = () => {
+    setIsLoading(true);
+    fetch('/api/admin/characters?limit=2000')
+      .then((res) => res.json())
+      .then((data) => {
+        const all = data.characters || [];
+        const missing = all.filter(
+          (c: Character) =>
+            c.verification_status !== 'verified' &&
+            ((c.bounty === null || c.bounty === undefined) ||
+              !c.age ||
+              !c.height ||
+              !c.image_url ||
+              c.devil_fruit_type === 'Unknown' ||
+              !c.origin ||
+              c.origin === 'Unknown' ||
+              (!c.first_appearance && !c.first_arc) ||
+              (!c.alias && !c.romanized_name))
+        );
+        setAllCharacters(missing);
+        applyFilters(missing, initialQuery, initialFilter);
+      })
+      .catch(() => {
+        setAllCharacters([]);
+        setFilteredCharacters([]);
+      })
+      .finally(() => setIsLoading(false));
   };
 
   useEffect(() => {
@@ -89,12 +110,18 @@ export default function AdminMissingDataPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    applyFilters(allCharacters, query, missingFilter);
+    applyFilters(allCharacters, query, missingFilter, 1);
   };
 
   const handleFilterChange = (filter: string) => {
     setMissingFilter(filter);
-    applyFilters(allCharacters, query, filter);
+    applyFilters(allCharacters, query, filter, 1);
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+    updateUrl(newPage, missingFilter, query);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (char: Character) => {
@@ -123,8 +150,11 @@ export default function AdminMissingDataPage() {
   // Calculate pagination slice
   const totalItems = filteredCharacters.length;
   const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
-  const startIndex = (page - 1) * itemsPerPage;
+  const validPage = Math.min(page, totalPages);
+  const startIndex = (validPage - 1) * itemsPerPage;
   const currentCharacters = filteredCharacters.slice(startIndex, startIndex + itemsPerPage);
+
+  const currentFromUrl = `/admin/missing?page=${validPage}&filter=${missingFilter}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ''}`;
 
   if (isLoading) {
     return (
@@ -151,7 +181,7 @@ export default function AdminMissingDataPage() {
 
         {/* Page counter pill */}
         <div className="text-xs text-slate-300 bg-slate-900 px-3.5 py-1.5 rounded-lg border border-slate-800 self-start sm:self-auto font-semibold">
-          Page <span className="font-black text-amber-400">{page}</span> of <span className="font-bold text-slate-100">{totalPages}</span> ({totalItems} total)
+          Page <span className="font-black text-amber-400">{validPage}</span> of <span className="font-bold text-slate-100">{totalPages}</span> ({totalItems} total)
         </div>
       </div>
 
@@ -187,7 +217,7 @@ export default function AdminMissingDataPage() {
           <select
             value={missingFilter}
             onChange={(e) => handleFilterChange(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-sky-500"
+            className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-sky-500 cursor-pointer"
           >
             <option value="all">All Missing Fields</option>
             <option value="bounty">Missing Bounty (Undisclosed/Null)</option>
@@ -253,7 +283,7 @@ export default function AdminMissingDataPage() {
 
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-800">
                     <Link
-                      href={`/admin/characters/${c.id}?from=/admin/missing`}
+                      href={`/admin/characters/${c.id}?from=${encodeURIComponent(currentFromUrl)}`}
                       className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center space-x-1.5 transition"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
@@ -287,11 +317,8 @@ export default function AdminMissingDataPage() {
 
             <div className="flex items-center space-x-2">
               <button
-                disabled={page <= 1}
-                onClick={() => {
-                  setPage((p) => Math.max(1, p - 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                disabled={validPage <= 1}
+                onClick={() => handlePageChange(Math.max(1, validPage - 1))}
                 className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 font-bold flex items-center space-x-1 cursor-pointer"
               >
                 <ChevronLeft className="w-4 h-4" />
@@ -304,23 +331,20 @@ export default function AdminMissingDataPage() {
                   let pageNum: number;
                   if (totalPages <= 5) {
                     pageNum = i + 1;
-                  } else if (page <= 3) {
+                  } else if (validPage <= 3) {
                     pageNum = i + 1;
-                  } else if (page >= totalPages - 2) {
+                  } else if (validPage >= totalPages - 2) {
                     pageNum = totalPages - 4 + i;
                   } else {
-                    pageNum = page - 2 + i;
+                    pageNum = validPage - 2 + i;
                   }
 
                   return (
                     <button
                       key={pageNum}
-                      onClick={() => {
-                        setPage(pageNum);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
+                      onClick={() => handlePageChange(pageNum)}
                       className={`w-8 h-8 rounded-lg font-bold transition cursor-pointer ${
-                        page === pageNum
+                        validPage === pageNum
                           ? 'gold-button text-slate-950'
                           : 'bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800'
                       }`}
@@ -332,11 +356,8 @@ export default function AdminMissingDataPage() {
               </div>
 
               <button
-                disabled={page >= totalPages}
-                onClick={() => {
-                  setPage((p) => Math.min(totalPages, p + 1));
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
+                disabled={validPage >= totalPages}
+                onClick={() => handlePageChange(Math.min(totalPages, validPage + 1))}
                 className="px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-800 text-slate-200 font-bold flex items-center space-x-1 cursor-pointer"
               >
                 <span>Next</span>
@@ -347,5 +368,20 @@ export default function AdminMissingDataPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function AdminMissingDataPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <Loader2 className="w-8 h-8 text-sky-500 animate-spin mb-3" />
+          <p className="text-slate-400 text-xs">Loading missing fields queue...</p>
+        </div>
+      }
+    >
+      <AdminMissingDataContent />
+    </Suspense>
   );
 }
