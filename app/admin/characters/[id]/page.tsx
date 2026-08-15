@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, use, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Save,
@@ -204,8 +204,10 @@ const SUGGESTED_ARCS = [
   'Elbaf',
 ];
 
-function CharacterEditContent({ id }: { id: string }) {
+function CharacterEditContent() {
   const router = useRouter();
+  const params = useParams();
+  const id = (params?.id as string) || '';
   const searchParams = useSearchParams();
   const fromParam = searchParams?.get('from');
 
@@ -1393,9 +1395,7 @@ function CharacterEditContent({ id }: { id: string }) {
   );
 }
 
-export default function AdminCharacterEditPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-
+export default function AdminCharacterEditPage() {
   return (
     <Suspense
       fallback={
@@ -1405,7 +1405,7 @@ export default function AdminCharacterEditPage({ params }: { params: Promise<{ i
         </div>
       }
     >
-      <CharacterEditContent id={id} />
+      <CharacterEditContent />
     </Suspense>
   );
 }
