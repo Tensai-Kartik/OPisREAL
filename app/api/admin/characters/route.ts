@@ -13,28 +13,149 @@ export async function GET(req: NextRequest) {
     const offset = (page - 1) * limit;
 
     const supabase = createAdminClient();
-    let query = supabase.from('characters').select('*', { count: 'exact' });
 
-    if (q) {
-      query = query.ilike('name', `%${q}%`);
+    if (!q) {
+      // Standard paginated listing when no search query
+      let query = supabase.from('characters').select('*', { count: 'exact' });
+      if (status !== 'all') {
+        query = query.eq('verification_status', status);
+      }
+      const { data: characters, count, error } = await query
+        .order('name', { ascending: true })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({
+        characters: characters || [],
+        total: count || 0,
+        page,
+        totalPages: Math.ceil((count || 0) / limit),
+      });
     }
+
+    // Comprehensive Search matching name, alias, romanized_name, japanese_name, and aliases
+    const qLower = q.toLowerCase();
+    const tokens = qLower.split(/\s+/).filter(Boolean);
+
+    // Build Supabase OR filter for all tokens
+    const orClauses: string[] = [
+      `name.ilike.%${q}%`,
+      `alias.ilike.%${q}%`,
+      `romanized_name.ilike.%${q}%`,
+      `japanese_name.ilike.%${q}%`,
+    ];
+    tokens.forEach((token) => {
+      orClauses.push(`name.ilike.%${token}%`);
+      orClauses.push(`alias.ilike.%${token}%`);
+      orClauses.push(`romanized_name.ilike.%${token}%`);
+    });
+
+    let mainQuery = supabase
+      .from('characters')
+      .select('*')
+      .or(Array.from(new Set(orClauses)).join(','));
+
     if (status !== 'all') {
-      query = query.eq('verification_status', status);
+      mainQuery = mainQuery.eq('verification_status', status);
     }
 
-    const { data: characters, count, error } = await query
-      .order('name', { ascending: true })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data: directMatches, error: mainErr } = await mainQuery.limit(200);
+    if (mainErr) {
+      return NextResponse.json({ error: mainErr.message }, { status: 500 });
     }
+
+    // Also search character_aliases table
+    const { data: aliasMatches } = await supabase
+      .from('character_aliases')
+      .select('character_id, alias, characters!inner(*)')
+      .ilike('alias', `%${q}%`)
+      .limit(100);
+
+    // Helper to calculate relevance score
+    const calculateScore = (char: any) => {
+      let score = 0;
+      const n = (char.name || '').toLowerCase();
+      const a = (char.alias || char.romanized_name || '').toLowerCase();
+      const nameWords = n.split(/[\s,.-]+/);
+      const aliasWords = a.split(/[\s,.-]+/);
+
+      // Exact full match
+      if (n === qLower) score += 1000;
+      else if (n.startsWith(qLower)) score += 600;
+      else if (nameWords.some((w: string) => w === qLower)) score += 550;
+      else if (nameWords.some((w: string) => w.startsWith(qLower))) score += 450;
+      else if (n.includes(qLower)) score += 200;
+
+      // Token matches on name
+      tokens.forEach((t) => {
+        if (n === t) score += 400;
+        else if (nameWords.some((w: string) => w === t)) score += 350;
+        else if (nameWords.some((w: string) => w.startsWith(t))) score += 250;
+        else if (n.includes(t)) score += 100;
+      });
+
+      // Alias matching
+      if (a === qLower) score += 500;
+      else if (a.startsWith(qLower)) score += 400;
+      else if (aliasWords.some((w: string) => w === qLower)) score += 350;
+      else if (aliasWords.some((w: string) => w.startsWith(qLower))) score += 300;
+      else if (a.includes(qLower)) score += 150;
+
+      tokens.forEach((t) => {
+        if (aliasWords.some((w: string) => w === t)) score += 200;
+        else if (aliasWords.some((w: string) => w.startsWith(t))) score += 150;
+      });
+
+      // Status weighting
+      if (char.verification_status === 'verified') score += 20;
+
+      return score;
+    };
+
+    const map = new Map<string, any>();
+
+    if (directMatches) {
+      for (const char of directMatches) {
+        const score = calculateScore(char);
+        map.set(char.id, { ...char, _searchScore: score });
+      }
+    }
+
+    if (aliasMatches) {
+      for (const item of aliasMatches) {
+        const char = item.characters as any;
+        if (!char) continue;
+        if (status !== 'all' && char.verification_status !== status) continue;
+
+        const score = calculateScore(char) + 50; // extra boost for explicit alias match
+        if (!map.has(char.id)) {
+          map.set(char.id, { ...char, _searchScore: score });
+        } else {
+          const existing = map.get(char.id)!;
+          existing._searchScore = Math.max(existing._searchScore || 0, score);
+        }
+      }
+    }
+
+    // Sort by search relevance score descending, then alphabetically by name
+    const allResults = Array.from(map.values()).sort((a, b) => {
+      if ((b._searchScore || 0) !== (a._searchScore || 0)) {
+        return (b._searchScore || 0) - (a._searchScore || 0);
+      }
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+    const total = allResults.length;
+    const paginated = allResults.slice(offset, offset + limit);
 
     return NextResponse.json({
-      characters: characters || [],
-      total: count || 0,
+      characters: paginated,
+      total,
       page,
-      totalPages: Math.ceil((count || 0) / limit),
+      totalPages: Math.ceil(total / limit) || 1,
     });
   } catch (err: any) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
