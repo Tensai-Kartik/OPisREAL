@@ -72,9 +72,6 @@ const PRESET_STATUSES = [
   'Alive',
   'Dead',
   'Unknown',
-  'Imprisoned',
-  'Frozen / Incapacitated',
-  'Deceased (Flashback)',
 ];
 
 const SUGGESTED_ADVANCED_HAKI = [
@@ -238,7 +235,6 @@ function CharacterEditContent() {
   const [customFruitMode, setCustomFruitMode] = useState(false);
   const [customRaceMode, setCustomRaceMode] = useState(false);
   const [customGenderMode, setCustomGenderMode] = useState(false);
-  const [customStatusMode, setCustomStatusMode] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -274,9 +270,6 @@ function CharacterEditContent() {
           }
           if (char.gender && !PRESET_GENDERS.includes(char.gender)) {
             setCustomGenderMode(true);
-          }
-          if (char.status && !PRESET_STATUSES.includes(char.status)) {
-            setCustomStatusMode(true);
           }
 
           // Format aliases from table or character.alias string
@@ -1046,46 +1039,16 @@ function CharacterEditContent() {
 
               {/* Status */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-slate-400 font-semibold">Status</label>
-                  <button
-                    type="button"
-                    onClick={() => setCustomStatusMode(!customStatusMode)}
-                    className="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer"
-                  >
-                    {customStatusMode ? 'Presets' : '+ Custom'}
-                  </button>
-                </div>
-
-                {customStatusMode ? (
-                  <input
-                    type="text"
-                    value={character.status || ''}
-                    onChange={(e) => setCharacter({ ...character, status: e.target.value })}
-                    placeholder="e.g. Imprisoned, Frozen, Deceased..."
-                    className="w-full bg-slate-950 border border-amber-500/50 rounded-lg p-2.5 text-amber-300 font-bold focus:border-amber-400"
-                  />
-                ) : (
-                  <select
-                    value={character.status || 'Alive'}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setCustomStatusMode(true);
-                      } else {
-                        setCharacter({ ...character, status: e.target.value });
-                      }
-                    }}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold"
-                  >
-                    {PRESET_STATUSES.map((s) => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                    {!PRESET_STATUSES.includes(character.status || '') && character.status && (
-                      <option value={character.status}>{character.status} (Custom)</option>
-                    )}
-                    <option value="__custom__">+ Add Custom Status...</option>
-                  </select>
-                )}
+                <label className="text-slate-400 font-semibold mb-1 block">Status</label>
+                <select
+                  value={character.status || 'Alive'}
+                  onChange={(e) => setCharacter({ ...character, status: e.target.value as any })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-100 font-semibold focus:border-amber-500"
+                >
+                  {PRESET_STATUSES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
               </div>
 
               {/* Bounty */}

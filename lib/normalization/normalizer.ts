@@ -106,9 +106,9 @@ export function normalizeRace(raw?: string): RaceType {
 export function normalizeStatus(raw?: string): StatusType {
   if (!raw) return 'Unknown';
   const str = raw.toLowerCase().trim();
-  if (str.includes('alive') || str.includes('vivant') || str.includes('active')) return 'Alive';
-  if (str.includes('dead') || str.includes('décédé') || str.includes('decede') || str.includes('deceased') || str.includes('killed') || str.includes('morte')) return 'Dead';
-  return 'Alive';
+  if (str.includes('alive') || str.includes('vivant') || str.includes('active') || str.includes('living')) return 'Alive';
+  if (str.includes('dead') || str.includes('décédé') || str.includes('decede') || str.includes('deceased') || str.includes('killed') || str.includes('morte') || str.includes('died') || str.includes('mort')) return 'Dead';
+  return 'Unknown';
 }
 
 export function normalizeDevilFruitType(raw?: string, name?: string): DevilFruitType {

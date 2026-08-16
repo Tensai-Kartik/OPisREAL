@@ -16,7 +16,7 @@ export type RaceType =
   | 'Other'
   | string;
 
-export type StatusType = 'Alive' | 'Dead' | 'Unknown' | 'Other' | string;
+export type StatusType = 'Alive' | 'Dead' | 'Unknown';
 
 export type DevilFruitType = 
   | 'Paramecia' 
