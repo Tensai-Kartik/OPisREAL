@@ -1,13 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Character } from '@/types/character';
+import CharacterHoverCard from './CharacterHoverCard';
 
-interface CharacterAvatarProps {
+export interface CharacterAvatarProps {
   src?: string | null;
   name: string;
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
   className?: string;
   fit?: 'cover' | 'contain';
+  character?: Partial<Character> | null;
+  description?: string | null;
+  showTooltip?: boolean;
 }
 
 export default function CharacterAvatar({
@@ -16,6 +21,9 @@ export default function CharacterAvatar({
   size = 'md',
   className = '',
   fit = 'cover',
+  character,
+  description,
+  showTooltip = false,
 }: CharacterAvatarProps) {
   const [hasError, setHasError] = useState(false);
 
@@ -39,22 +47,17 @@ export default function CharacterAvatar({
     .charAt(0)
     .toUpperCase();
 
-  // If no source or failed to load, render fallback avatar
-  if (!src || hasError) {
-    return (
-      <div
-        className={`shrink-0 rounded-lg flex items-center justify-center font-black select-none border border-amber-600/40 shadow-inner bg-gradient-to-br from-amber-900/90 via-slate-900 to-amber-950 text-amber-300 ${sizeClasses[size]} ${className}`}
-        title={name}
-      >
-        <span>{initial}</span>
-      </div>
-    );
-  }
-
-  const fitClass = fit === 'contain' ? 'object-contain p-0.5' : 'object-cover object-top';
-
-  return (
-    <div className={`shrink-0 relative overflow-hidden rounded-lg border border-amber-600/40 bg-slate-950 shadow-sm flex items-center justify-center ${sizeClasses[size]} ${className}`}>
+  const avatarElement = (!src || hasError) ? (
+    <div
+      className={`shrink-0 rounded-lg flex items-center justify-center font-black select-none border border-amber-600/40 shadow-inner bg-gradient-to-br from-amber-900/90 via-slate-900 to-amber-950 text-amber-300 transition-all duration-200 group-hover:scale-105 group-hover:border-amber-400/80 group-hover:shadow-[0_0_12px_rgba(245,158,11,0.35)] ${sizeClasses[size]} ${className}`}
+      title={showTooltip ? undefined : name}
+    >
+      <span>{initial}</span>
+    </div>
+  ) : (
+    <div
+      className={`shrink-0 relative overflow-hidden rounded-lg border border-amber-600/40 bg-slate-950 shadow-sm flex items-center justify-center transition-all duration-200 group-hover:scale-105 group-hover:border-amber-400/80 group-hover:shadow-[0_0_14px_rgba(245,158,11,0.4)] ${sizeClasses[size]} ${className}`}
+    >
       {fit === 'contain' && (
         <img
           src={src}
@@ -70,8 +73,25 @@ export default function CharacterAvatar({
         referrerPolicy="no-referrer"
         loading="lazy"
         onError={() => setHasError(true)}
-        className={`relative z-10 w-full h-full ${fitClass}`}
+        className={`relative z-10 w-full h-full transition-transform duration-300 group-hover:scale-110 ${
+          fit === 'contain' ? 'object-contain p-0.5' : 'object-cover object-top'
+        }`}
       />
     </div>
   );
+
+  if (showTooltip) {
+    return (
+      <CharacterHoverCard
+        character={character}
+        name={name}
+        imageUrl={src}
+        description={description || character?.description}
+      >
+        {avatarElement}
+      </CharacterHoverCard>
+    );
+  }
+
+  return avatarElement;
 }

@@ -72,13 +72,13 @@ export default function FeedbackModal({ theme = 'dark' }: FeedbackModalProps) {
       {/* Trigger Button */}
       <button
         onClick={() => { setIsOpen((v) => !v); setSubmitted(false); setError(null); }}
-        className={`px-3 py-2.5 rounded-xl border text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 shadow-lg transition-all duration-200 backdrop-blur-md ${
+        className={`group px-3 py-2.5 rounded-xl border text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 shadow-lg transition-all duration-200 backdrop-blur-md cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
           isDark
-            ? 'bg-slate-900/90 border-amber-500/40 text-amber-400 hover:bg-slate-800 hover:border-amber-400'
-            : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-100 shadow-sm'
+            ? 'bg-slate-900/90 border-amber-500/40 text-amber-400 hover:bg-slate-800 hover:border-amber-400 hover:shadow-[0_0_16px_rgba(245,158,11,0.3)]'
+            : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-amber-500 hover:shadow-md'
         }`}
       >
-        <MessageSquare className="w-4 h-4" />
+        <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform duration-200 text-amber-400" />
         <span>Feedback</span>
       </button>
 

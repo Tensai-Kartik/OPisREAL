@@ -1,5 +1,6 @@
 import { Character } from '@/types/character';
 import { AttributeMatch, GuessComparison } from '@/types/game';
+import { formatDebutString, parseDebutDisplay } from './debutHelper';
 
 function compareNumeric(guessVal?: number | null, targetVal?: number | null, unit: string = ''): AttributeMatch {
   if (guessVal === null || guessVal === undefined) {
@@ -171,31 +172,25 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
     displayValue: guess.origin,
   };
 
-  // First Appearance / Debut (Show Chapter + Arc name)
+  // First Appearance / Debut (Show Arc name + Episode in braces)
   const formatDebut = (c: Character) => {
-    const app = (c.first_appearance || '').trim();
-    const arc = (c.first_arc || '').trim();
-
-    if (app && arc) {
-      // Avoid duplicating if arc is already inside appearance string
-      if (app.toLowerCase().includes(arc.toLowerCase())) {
-        return app;
-      }
-      return `${app} (${arc})`;
-    }
-    if (arc) return arc;
-    if (app) return app;
-    return 'Unknown';
+    return formatDebutString(c.first_appearance, c.first_arc);
   };
 
   const guessDebut = formatDebut(guess);
   const targetDebut = formatDebut(target);
 
-  const isExactDebut = guessDebut.toLowerCase() === targetDebut.toLowerCase() && guessDebut !== 'Unknown';
+  const guessParsed = parseDebutDisplay(guess.first_appearance, guess.first_arc);
+  const targetParsed = parseDebutDisplay(target.first_appearance, target.first_arc);
+
+  const isExactDebut =
+    guessDebut.toLowerCase() === targetDebut.toLowerCase() &&
+    guessDebut !== 'Unknown';
+
   const isSameArc =
-    guess.first_arc &&
-    target.first_arc &&
-    guess.first_arc.toLowerCase() === target.first_arc.toLowerCase();
+    guessParsed.arcName !== 'Unknown' &&
+    targetParsed.arcName !== 'Unknown' &&
+    guessParsed.arcName.toLowerCase() === targetParsed.arcName.toLowerCase();
 
   let debutStatus: 'correct' | 'partial' | 'incorrect' | 'unknown' = 'incorrect';
   if (guessDebut === 'Unknown' || targetDebut === 'Unknown') {

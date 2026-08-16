@@ -256,7 +256,7 @@ function AdminMissingDataContent() {
               const displayAlias = c.alias || c.romanized_name;
 
               return (
-                <div key={c.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col justify-between space-y-4 shadow-md hover:border-slate-700 transition">
+                <div key={c.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col justify-between space-y-4 shadow-md hover:border-amber-500/50 hover:shadow-[0_0_16px_rgba(245,158,11,0.2)] transition-all duration-200">
                   <div className="flex items-start space-x-3">
                     <CharacterAvatar
                       src={c.image_url}

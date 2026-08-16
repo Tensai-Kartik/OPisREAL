@@ -11,6 +11,15 @@ interface SearchResultItem {
   alias?: string | null;
   matchedAlias?: string | null;
   japanese_name?: string | null;
+  description?: string | null;
+  bounty?: number | null;
+  origin?: string | null;
+  first_arc?: string | null;
+  first_appearance?: string | null;
+  devil_fruit_name?: string | null;
+  devil_fruit_type?: string | null;
+  race?: string | null;
+  status?: string | null;
   score?: number;
 }
 
@@ -29,7 +38,7 @@ export async function GET(req: NextRequest) {
     // 1. Fetch characters matching name, alias, japanese name, or romanized name
     const { data: chars } = await supabase
       .from('characters')
-      .select('id, name, slug, japanese_name, alias, romanized_name, image_url, verification_status, bounty')
+      .select('id, name, slug, japanese_name, alias, romanized_name, image_url, verification_status, bounty, description, origin, first_arc, first_appearance, devil_fruit_name, devil_fruit_type, race, status')
       .eq('is_active', true)
       .or(`name.ilike.%${q}%,alias.ilike.%${q}%,romanized_name.ilike.%${q}%,japanese_name.ilike.%${q}%`)
       .order('verification_status', { ascending: false })
@@ -38,7 +47,7 @@ export async function GET(req: NextRequest) {
     // 2. Fetch matching aliases from character_aliases table
     const { data: aliases } = await supabase
       .from('character_aliases')
-      .select('character_id, alias, characters!inner(id, name, slug, alias, romanized_name, image_url, is_active, verification_status, bounty)')
+      .select('character_id, alias, characters!inner(id, name, slug, alias, romanized_name, japanese_name, image_url, is_active, verification_status, bounty, description, origin, first_arc, first_appearance, devil_fruit_name, devil_fruit_type, race, status)')
       .ilike('alias', `%${q}%`)
       .eq('characters.is_active', true)
       .limit(15);
@@ -79,11 +88,11 @@ export async function GET(req: NextRequest) {
         if (ma === qLower) {
           score += 500;
         } else if (ma.startsWith(qLower)) {
-          score += 400;
+          score += 350;
         } else if (aliasWords.some(w => w === qLower)) {
-          score += 380;
-        } else if (aliasWords.some(w => w.startsWith(qLower))) {
           score += 320;
+        } else if (aliasWords.some(w => w.startsWith(qLower))) {
+          score += 260;
         } else if (ma.includes(qLower)) {
           score += 80;
         }
@@ -133,6 +142,15 @@ export async function GET(req: NextRequest) {
           alias: aliasVal,
           matchedAlias,
           japanese_name: c.japanese_name,
+          description: c.description,
+          bounty: c.bounty,
+          origin: c.origin,
+          first_arc: c.first_arc,
+          first_appearance: c.first_appearance,
+          devil_fruit_name: c.devil_fruit_name,
+          devil_fruit_type: c.devil_fruit_type,
+          race: c.race,
+          status: c.status,
           score,
         });
       }
@@ -154,6 +172,16 @@ export async function GET(req: NextRequest) {
             image_url: char.image_url,
             alias: aliasVal,
             matchedAlias: a.alias,
+            japanese_name: char.japanese_name,
+            description: char.description,
+            bounty: char.bounty,
+            origin: char.origin,
+            first_arc: char.first_arc,
+            first_appearance: char.first_appearance,
+            devil_fruit_name: char.devil_fruit_name,
+            devil_fruit_type: char.devil_fruit_type,
+            race: char.race,
+            status: char.status,
             score,
           });
         } else {
@@ -178,4 +206,3 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results: [] });
   }
 }
-

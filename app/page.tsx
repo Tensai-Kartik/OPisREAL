@@ -163,24 +163,24 @@ export default function GamePage() {
           <div className="flex items-center justify-center space-x-3 mt-2.5">
             <button
               onClick={() => setIsLegendOpen(true)}
-              className={`px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition backdrop-blur-md shadow-sm ${
+              className={`group px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
                 isDark
-                  ? 'bg-slate-900/85 border-amber-600/30 text-amber-400 hover:bg-slate-800'
-                  : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-100'
+                  ? 'bg-slate-900/85 border-amber-600/30 text-amber-400 hover:bg-slate-800 hover:border-amber-400 hover:shadow-[0_0_14px_rgba(245,158,11,0.25)]'
+                  : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-amber-500 hover:shadow-md'
               }`}
             >
-              <HelpCircle className="w-3.5 h-3.5" />
+              <HelpCircle className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform duration-200" />
               <span>How to Play</span>
             </button>
             <button
               onClick={initNewGame}
-              className={`px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition backdrop-blur-md shadow-sm ${
+              className={`group px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
                 isDark
-                  ? 'bg-slate-900/85 border-amber-600/30 text-slate-300 hover:bg-slate-800'
-                  : 'bg-white/95 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  ? 'bg-slate-900/85 border-amber-600/30 text-slate-300 hover:bg-slate-800 hover:text-amber-300 hover:border-amber-500/50'
+                  : 'bg-white/95 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-amber-800 hover:border-amber-500/50 hover:shadow-md'
               }`}
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
               <span>Reset Game</span>
             </button>
           </div>
@@ -222,13 +222,6 @@ export default function GamePage() {
                 theme={theme}
               />
             </div>
-
-            {/* Guess Counter */}
-            {guesses.length > 0 && (
-              <div className={`text-center font-bold text-[11px] uppercase tracking-wider pt-1 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
-                Guesses Submitted: <span className="text-amber-500 font-black text-xs">{guesses.length}</span>
-              </div>
-            )}
 
             {/* Comparison Table */}
             <ComparisonTable guesses={guesses} theme={theme} />
