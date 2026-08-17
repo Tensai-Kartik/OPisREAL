@@ -4,7 +4,7 @@ export interface GameBackground {
   supabaseUrl: string;
 }
 
-const SUPABASE_STORAGE_URL = 'https://pmlrydjsmhfvohzlhkbu.supabase.co/storage/v1/object/public/backgrounds';
+export const SUPABASE_STORAGE_URL = 'https://pmlrydjsmhfvohzlhkbu.supabase.co/storage/v1/object/public/backgrounds';
 
 export const ALL_BACKGROUNDS: GameBackground[] = [
   { id: 'bg1', file: 'https://pmlrydjsmhfvohzlhkbu.supabase.co/storage/v1/object/public/backgrounds/bg1.webp', supabaseUrl: 'https://pmlrydjsmhfvohzlhkbu.supabase.co/storage/v1/object/public/backgrounds/bg1.webp' },

@@ -8,15 +8,13 @@ interface DynamicBackgroundProps {
 }
 
 export default function DynamicBackground({ theme = 'dark' }: DynamicBackgroundProps) {
-  const [bg, setBg] = useState<GameBackground>(ALL_BACKGROUNDS[0]);
   const [isLoaded, setIsLoaded] = useState(false);
   const [activeUrl, setActiveUrl] = useState(ALL_BACKGROUNDS[0].file);
 
   useEffect(() => {
     const selected = getRandomBackground();
-    setBg(selected);
 
-    // Try loading local file first (or Supabase URL if configured)
+    // Try loading Supabase URL / CDN file
     const img = new window.Image();
     img.src = selected.file;
     img.onload = () => {

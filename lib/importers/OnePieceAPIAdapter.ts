@@ -15,8 +15,8 @@ export async function fetchOnePieceAPICharacters(): Promise<RawCharacterRecord[]
     const data = await res.json();
     if (!Array.isArray(data)) return [];
 
-    return data.map((item: any) => {
-      let rawName = item.name || item.french_name || '';
+    return data.map((item: Record<string, unknown>) => {
+      let rawName = (item.name as string) || (item.french_name as string) || '';
       // Clean up common name formatting inconsistencies
       if (rawName.includes(',')) {
         const parts = rawName.split(',').map((p: string) => p.trim());
@@ -25,28 +25,31 @@ export async function fetchOnePieceAPICharacters(): Promise<RawCharacterRecord[]
         }
       }
 
-      const crewName = item.crew?.name || (typeof item.crew === 'string' ? item.crew : undefined);
+      const crewObj = item.crew as { name?: string } | undefined;
+      const crewName = crewObj?.name || (typeof item.crew === 'string' ? item.crew : undefined);
+      const fruitObj = item.fruit as { name?: string; type?: string } | undefined;
 
       return {
         source_id: 'onepieceapi',
         source_character_id: String(item.id || rawName),
         name: rawName,
-        japanese_name: item.japanese_name,
-        romanized_name: item.romanized_name,
-        bounty: item.bounty,
-        age: item.age,
-        height: item.height || item.size,
-        status: item.status,
-        origin: item.origin || item.sea,
-        first_appearance: item.first_appearance || item.debut,
-        devil_fruit_name: item.fruit?.name || item.fruit_name,
-        devil_fruit_type: item.fruit?.type || item.fruit_type,
-        occupations: item.job ? [item.job] : [],
+        japanese_name: item.japanese_name as string | undefined,
+        romanized_name: item.romanized_name as string | undefined,
+        bounty: item.bounty as number | undefined,
+        age: item.age as number | undefined,
+        height: (item.height as number) || (item.size as number) || undefined,
+        status: item.status as string | undefined,
+        origin: (item.origin as string) || (item.sea as string) || undefined,
+        first_appearance: (item.first_appearance as string) || (item.debut as string) || undefined,
+        devil_fruit_name: fruitObj?.name || (item.fruit_name as string) || undefined,
+        devil_fruit_type: fruitObj?.type || (item.fruit_type as string) || undefined,
+        occupations: item.job ? [String(item.job)] : [],
         affiliations: crewName ? [crewName] : [],
       };
     });
-  } catch (err: any) {
-    console.warn('OnePieceAPI fetch failed:', err.message);
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.warn('OnePieceAPI fetch failed:', errorMsg);
     return [];
   }
 }

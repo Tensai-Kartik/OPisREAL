@@ -38,7 +38,7 @@ export function createAdminClient() {
       fetch: globalThis.fetch,
     },
     realtime: {
-      transport: WebSocket as any,
+      transport: WebSocket as unknown as typeof globalThis.WebSocket,
     },
   });
 }

@@ -49,6 +49,14 @@ export function matchCharacter(
         }
       }
     }
+
+    if (inputAliases && inputAliases.length > 0) {
+      for (const alias of inputAliases) {
+        if (alias.toLowerCase() === candidate.name.toLowerCase()) {
+          return { confidence: 0.9, matchedId: candidate.id, reason: 'Input alias matched candidate name' };
+        }
+      }
+    }
   }
 
   return { confidence: 0.0, reason: 'No match found' };

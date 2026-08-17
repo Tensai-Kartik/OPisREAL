@@ -8,12 +8,14 @@ export async function POST() {
     const supabase = createAdminClient();
 
     // Fetch active verified canon characters
-    let { data: chars, error } = await supabase
+    const { data: verifiedChars } = await supabase
       .from('characters')
       .select('id')
       .eq('is_active', true)
       .eq('is_canon', true)
       .eq('verification_status', 'verified');
+
+    let chars = verifiedChars;
 
     // Fallback if verified pool is small
     if (!chars || chars.length === 0) {

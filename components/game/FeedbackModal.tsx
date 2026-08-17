@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Bug, Lightbulb, Send, X, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, X, CheckCircle2, ChevronDown, Loader2 } from 'lucide-react';
 
 interface FeedbackModalProps {
   theme?: 'dark' | 'light';
