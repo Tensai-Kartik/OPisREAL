@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import DynamicBackground from '@/components/game/DynamicBackground';
 import CharacterSearchInput from '@/components/game/CharacterSearchInput';
 import GiveUpButton from '@/components/game/GiveUpButton';
@@ -128,7 +129,7 @@ export default function GamePage() {
 
   return (
     <main
-      className={`min-h-screen relative flex flex-col justify-between p-3 md:p-6 transition-colors duration-500 ${
+      className={`min-h-screen relative flex flex-col justify-between p-2.5 sm:p-4 md:p-6 transition-colors duration-500 ${
         isDark ? 'text-slate-100' : 'text-slate-900 light-theme'
       }`}
     >
@@ -136,15 +137,15 @@ export default function GamePage() {
       <DynamicBackground theme={theme} />
 
       {/* Top-right controls — Feedback + Theme Toggle */}
-      <div className="fixed top-3 right-4 z-50 flex items-center space-x-2">
+      <div className="fixed top-2.5 right-2.5 sm:top-3 sm:right-4 z-50 flex items-center space-x-1.5 sm:space-x-2">
         <FeedbackModal theme={theme} />
         <ThemeToggle theme={theme} onToggle={toggleTheme} />
       </div>
 
       <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col items-center">
-        {/* Header */}
-        <header className="text-center my-3">
-          <div className={`inline-flex items-center space-x-2 px-3.5 py-1 rounded-full border text-[11px] font-bold uppercase tracking-widest mb-1.5 backdrop-blur-md shadow-sm ${
+        {/* Centered Brand Header with Logo & Title */}
+        <header className="text-center my-2 sm:my-3 flex flex-col items-center justify-center w-full px-2">
+          <div className={`inline-flex items-center space-x-2 px-3 sm:px-3.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-bold uppercase tracking-widest mb-1.5 sm:mb-2 backdrop-blur-md shadow-sm ${
             isDark
               ? 'bg-amber-950/70 border-amber-500/40 text-amber-400'
               : 'bg-white/95 border-slate-200 text-slate-800 shadow-sm'
@@ -153,17 +154,29 @@ export default function GamePage() {
             <span>One Piece Character Guessing Game</span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight uppercase gold-gradient-text drop-shadow-md">
-            ONE PIECE IS REAL
-          </h1>
-          <p className={`text-xs md:text-sm max-w-md mx-auto mt-1 font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+          {/* Logo beside ONE PIECE IS REAL - Centrally aligned */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3.5 my-1 max-w-full">
+            <Image
+              src="/logo_bg.png"
+              alt="OP is Real Logo"
+              width={64}
+              height={64}
+              className="w-9 h-9 sm:w-12 sm:h-12 md:w-16 md:h-16 object-contain drop-shadow-[0_4px_14px_rgba(245,158,11,0.4)] shrink-0 select-none pointer-events-none transform hover:scale-105 transition-transform"
+              priority
+            />
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight uppercase gold-gradient-text drop-shadow-md text-center leading-none">
+              ONE PIECE IS REAL
+            </h1>
+          </div>
+
+          <p className={`text-xs sm:text-sm max-w-md mx-auto mt-1 font-semibold ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
             Test your anime & manga knowledge. Guess the hidden character!
           </p>
 
-          <div className="flex items-center justify-center space-x-3 mt-2.5">
+          <div className="flex items-center justify-center space-x-2 sm:space-x-3 mt-2 sm:mt-2.5">
             <button
               onClick={() => setIsLegendOpen(true)}
-              className={`group px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
+              className={`group px-3 sm:px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
                 isDark
                   ? 'bg-slate-900/85 border-amber-600/30 text-amber-400 hover:bg-slate-800 hover:border-amber-400 hover:shadow-[0_0_14px_rgba(245,158,11,0.25)]'
                   : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-amber-500 hover:shadow-md'
@@ -174,7 +187,7 @@ export default function GamePage() {
             </button>
             <button
               onClick={initNewGame}
-              className={`group px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
+              className={`group px-3 sm:px-3.5 py-1.5 border rounded-xl text-xs font-extrabold uppercase flex items-center space-x-1.5 transition-all duration-200 backdrop-blur-md shadow-sm cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
                 isDark
                   ? 'bg-slate-900/85 border-amber-600/30 text-slate-300 hover:bg-slate-800 hover:text-amber-300 hover:border-amber-500/50'
                   : 'bg-white/95 border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-amber-800 hover:border-amber-500/50 hover:shadow-md'
@@ -204,8 +217,8 @@ export default function GamePage() {
             <CluesPanel clues={clues} guessCount={guesses.length} theme={theme} />
 
             {/* Centered Search & Guess Bar with Give Up Box Beside It */}
-            <div className="w-full max-w-2xl mx-auto flex items-center justify-center gap-3">
-              <div className="flex-1 max-w-xl">
+            <div className="w-full max-w-2xl mx-auto flex flex-row items-center justify-center gap-2 sm:gap-3 px-1">
+              <div className="flex-1 min-w-0">
                 <CharacterSearchInput
                   onSelectCharacter={handleGuess}
                   guessedIds={guessedIds}
@@ -215,15 +228,17 @@ export default function GamePage() {
               </div>
 
               {/* Character-styled Give Up Box */}
-              <GiveUpButton
-                onGiveUp={() => setIsConfirmGiveUpOpen(true)}
-                disabled={isWon || isSubmitting || isSurrendered || !sessionToken}
-                isLoading={isGivingUp}
-                theme={theme}
-              />
+              <div className="shrink-0">
+                <GiveUpButton
+                  onGiveUp={() => setIsConfirmGiveUpOpen(true)}
+                  disabled={isWon || isSubmitting || isSurrendered || !sessionToken}
+                  isLoading={isGivingUp}
+                  theme={theme}
+                />
+              </div>
             </div>
 
-            {/* Comparison Table */}
+            {/* Comparison Table with Horizontal Scrolling & Responsive Layout */}
             <ComparisonTable guesses={guesses} theme={theme} />
           </div>
         )}
@@ -252,7 +267,7 @@ export default function GamePage() {
 
       {/* Fan Disclaimer Footer */}
       <footer className={`mt-6 text-center text-[11px] py-2 border-t ${isDark ? 'text-slate-400/80 border-slate-800/80' : 'text-slate-500 border-slate-200'}`}>
-        <p className="max-w-2xl mx-auto">
+        <p className="max-w-2xl mx-auto px-2">
           One Piece and its characters are the property of Eiichiro Oda, Shueisha, Toei Animation, and respective rights holders.
           This is an unofficial, non-commercial fan-made project created for entertainment purposes.
         </p>

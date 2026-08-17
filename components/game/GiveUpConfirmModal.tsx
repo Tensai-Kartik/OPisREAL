@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { Swords, Flag, AlertTriangle, X } from 'lucide-react';
 
 interface GiveUpConfirmModalProps {
@@ -24,7 +25,7 @@ export default function GiveUpConfirmModal({
         <button
           onClick={onClose}
           disabled={isLoading}
-          className="absolute top-3.5 right-3.5 p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition"
+          className="absolute top-3.5 right-3.5 p-1 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
@@ -37,9 +38,11 @@ export default function GiveUpConfirmModal({
 
         {/* Character image preview */}
         <div className="relative w-16 h-16 mx-auto mb-3 rounded-xl overflow-hidden border-2 border-red-500/60 shadow-lg bg-slate-900">
-          <img
+          <Image
             src="/give_up.jpg"
             alt="Give Up Warning"
+            width={64}
+            height={64}
             className="w-full h-full object-cover object-center"
           />
         </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, Sparkles, ChevronRight } from 'lucide-react';
+import { Search, Loader2, ChevronRight } from 'lucide-react';
 import CharacterAvatar from './CharacterAvatar';
 
 interface SearchResult {

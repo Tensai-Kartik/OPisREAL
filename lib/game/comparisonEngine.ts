@@ -192,13 +192,17 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
     targetParsed.arcName !== 'Unknown' &&
     guessParsed.arcName.toLowerCase() === targetParsed.arcName.toLowerCase();
 
-  let debutStatus: 'correct' | 'partial' | 'incorrect' | 'unknown' = 'incorrect';
+  let debutStatus: 'correct' | 'partial' | 'earlier' | 'later' | 'incorrect' | 'unknown' = 'incorrect';
   if (guessDebut === 'Unknown' || targetDebut === 'Unknown') {
     debutStatus = 'unknown';
   } else if (isExactDebut) {
     debutStatus = 'correct';
   } else if (isSameArc) {
     debutStatus = 'partial';
+  } else if (targetParsed.chronologicalRank < guessParsed.chronologicalRank) {
+    debutStatus = 'earlier';
+  } else if (targetParsed.chronologicalRank > guessParsed.chronologicalRank) {
+    debutStatus = 'later';
   }
 
   const firstAppearanceMatch: AttributeMatch = {

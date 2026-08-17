@@ -41,6 +41,30 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/play',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/game',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/home',
+        destination: '/',
+        permanent: true,
+      },
+      {
+        source: '/feedback',
+        destination: '/?feedback=true',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

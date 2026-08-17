@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { Shield, Database, AlertTriangle, HelpCircle, Download, LayoutDashboard, Anchor, LogOut, Loader2, MessageSquare } from 'lucide-react';
+import { Database, AlertTriangle, HelpCircle, Download, LayoutDashboard, Anchor, LogOut, Loader2, MessageSquare } from 'lucide-react';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -69,15 +70,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <header className="bg-slate-900 border-b border-amber-600/30 sticky top-0 z-40 shadow-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-400">
-              <Shield className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="font-extrabold text-slate-100 text-lg uppercase tracking-wider gold-gradient-text">
-                ONE PIECE DATA CURATION
-              </span>
-              <span className="text-xs text-slate-400 block font-medium">Protected Admin Portal</span>
-            </div>
+            <Link href="/admin" className="flex items-center space-x-2.5 group">
+              <Image
+                src="/logo_bg.png"
+                alt="OP is Real Logo"
+                width={36}
+                height={36}
+                className="w-9 h-9 object-contain drop-shadow-[0_2px_8px_rgba(245,158,11,0.35)] group-hover:scale-105 transition-transform"
+                priority
+              />
+              <div>
+                <span className="font-extrabold text-slate-100 text-base sm:text-lg uppercase tracking-wider gold-gradient-text">
+                  ONE PIECE DATA CURATION
+                </span>
+                <span className="text-[11px] text-slate-400 block font-medium">Protected Admin Portal</span>
+              </div>
+            </Link>
           </div>
 
           <div className="flex items-center space-x-2">

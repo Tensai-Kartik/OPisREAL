@@ -1,14 +1,16 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Shield, KeyRound, Lock, Loader2, AlertCircle } from 'lucide-react';
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get('from');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +27,10 @@ export default function AdminLoginPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          router.push('/admin');
+          const targetUrl = fromParam && fromParam.startsWith('/admin') && fromParam !== '/admin/login'
+            ? fromParam
+            : '/admin';
+          router.push(targetUrl);
           router.refresh();
         } else {
           setErrorMsg(data.error || 'Incorrect password');
@@ -79,7 +84,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={isLoading || !password}
-            className="w-full py-3.5 gold-button rounded-xl text-sm font-black uppercase tracking-wider flex items-center justify-center space-x-2 disabled:opacity-50"
+            className="w-full py-3.5 gold-button rounded-xl text-sm font-black uppercase tracking-wider flex items-center justify-center space-x-2 disabled:opacity-50 cursor-pointer"
           >
             {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Lock className="w-5 h-5" />}
             <span>ENTER ADMIN SYSTEM</span>
@@ -87,5 +92,20 @@ export default function AdminLoginPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-amber-400">
+          <Loader2 className="w-8 h-8 animate-spin mb-2" />
+          <p className="text-xs font-bold uppercase tracking-wider">Loading Portal...</p>
+        </div>
+      }
+    >
+      <AdminLoginForm />
+    </Suspense>
   );
 }

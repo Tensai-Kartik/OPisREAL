@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { Loader2, Flag } from 'lucide-react';
 
 interface GiveUpButtonProps {
@@ -33,9 +34,11 @@ export default function GiveUpButton({
     >
       {/* Give Up Image Container */}
       <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-red-500/60 bg-slate-900 shadow-md mb-1 flex items-center justify-center group-hover:border-red-400 transition-colors">
-        <img
+        <Image
           src="/give_up.jpg"
           alt="Give Up"
+          width={48}
+          height={48}
           className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-200"
         />
         {isLoading && (
