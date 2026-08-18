@@ -15,6 +15,41 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient();
 
     if (!q) {
+      if (limit > 1000) {
+        let all: any[] = [];
+        let cur = offset;
+        let remaining = limit;
+        let totalCount = 0;
+
+        while (remaining > 0) {
+          const fetchSize = Math.min(1000, remaining);
+          let query = supabase.from('characters').select('*', { count: 'exact' });
+          if (status !== 'all') {
+            query = query.eq('verification_status', status);
+          }
+          const { data, count, error } = await query
+            .order('name', { ascending: true })
+            .range(cur, cur + fetchSize - 1);
+
+          if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+          }
+          if (count !== null) totalCount = count;
+          if (!data || data.length === 0) break;
+          all = all.concat(data);
+          if (data.length < fetchSize) break;
+          cur += data.length;
+          remaining -= data.length;
+        }
+
+        return NextResponse.json({
+          characters: all,
+          total: totalCount || all.length,
+          page,
+          totalPages: Math.ceil((totalCount || all.length) / limit) || 1,
+        });
+      }
+
       // Standard paginated listing when no search query
       let query = supabase.from('characters').select('*', { count: 'exact' });
       if (status !== 'all') {

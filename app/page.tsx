@@ -144,8 +144,8 @@ export default function GamePage() {
 
       <div className="w-full max-w-7xl mx-auto flex-1 flex flex-col items-center">
         {/* Centered Brand Header with Logo & Title */}
-        <header className="text-center my-2 sm:my-3 flex flex-col items-center justify-center w-full px-2">
-          <div className={`inline-flex items-center space-x-2 px-3 sm:px-3.5 py-1 rounded-full border text-[10.5px] sm:text-[11px] font-bold uppercase tracking-widest mb-1.5 sm:mb-2 backdrop-blur-md shadow-sm ${
+        <header className="text-center mt-9 sm:mt-3 mb-2 sm:mb-3 flex flex-col items-center justify-center w-full px-2">
+          <div className={`inline-flex items-center space-x-2 px-3 sm:px-3.5 py-1 rounded-full border text-[10px] sm:text-[11px] font-bold uppercase tracking-widest mb-1.5 sm:mb-2 backdrop-blur-md shadow-sm ${
             isDark
               ? 'bg-amber-950/70 border-amber-500/40 text-amber-400'
               : 'bg-white/95 border-slate-200 text-slate-800 shadow-sm'
@@ -217,7 +217,7 @@ export default function GamePage() {
             <CluesPanel clues={clues} guessCount={guesses.length} theme={theme} />
 
             {/* Centered Search & Guess Bar with Give Up Box Beside It */}
-            <div className="w-full max-w-2xl mx-auto flex flex-row items-center justify-center gap-2 sm:gap-3 px-1">
+            <div className="w-full max-w-2xl mx-auto flex flex-row items-center justify-center gap-1.5 sm:gap-3 px-0.5 sm:px-1">
               <div className="flex-1 min-w-0">
                 <CharacterSearchInput
                   onSelectCharacter={handleGuess}

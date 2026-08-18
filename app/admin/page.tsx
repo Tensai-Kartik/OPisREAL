@@ -60,9 +60,9 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       {/* Top Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-100 uppercase tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-100 uppercase tracking-tight">
             Database Health & Data Quality
           </h1>
           <p className="text-slate-400 text-xs mt-1">
@@ -71,7 +71,7 @@ export default function AdminDashboardPage() {
         </div>
         <button
           onClick={fetchMetrics}
-          className="px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5"
+          className="self-start sm:self-auto px-3.5 py-2 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 cursor-pointer shadow-sm transition"
         >
           <RefreshCw className="w-3.5 h-3.5" />
           <span>Refresh</span>
@@ -79,7 +79,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {/* Total Characters */}
         <div className="p-5 bg-slate-900 border border-slate-800 rounded-xl">
           <div className="flex items-center justify-between text-slate-400 mb-2">

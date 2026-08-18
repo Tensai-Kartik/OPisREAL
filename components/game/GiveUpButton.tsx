@@ -24,7 +24,7 @@ export default function GiveUpButton({
       onClick={onGiveUp}
       disabled={disabled || isLoading}
       title="Give up and reveal the secret character"
-      className={`group relative flex flex-col items-center justify-center p-1.5 rounded-xl border-2 transition-all duration-200 shadow-xl select-none shrink-0 cursor-pointer ${
+      className={`group relative flex flex-col items-center justify-center p-1 sm:p-1.5 rounded-xl border-2 transition-all duration-200 shadow-xl select-none shrink-0 cursor-pointer ${
         disabled
           ? 'opacity-40 cursor-not-allowed border-slate-700 bg-slate-900/50'
           : isDark
@@ -33,7 +33,7 @@ export default function GiveUpButton({
       }`}
     >
       {/* Give Up Image Container */}
-      <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-red-500/60 bg-slate-900 shadow-md mb-1 flex items-center justify-center group-hover:border-red-400 transition-colors">
+      <div className="relative w-9 h-9 sm:w-12 sm:h-12 rounded-md sm:rounded-lg overflow-hidden border-2 border-red-500/60 bg-slate-900 shadow-md mb-0.5 sm:mb-1 flex items-center justify-center group-hover:border-red-400 transition-colors">
         <Image
           src="/give_up.jpg"
           alt="Give Up"
@@ -43,20 +43,20 @@ export default function GiveUpButton({
         />
         {isLoading && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <Loader2 className="w-5 h-5 text-red-400 animate-spin" />
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 text-red-400 animate-spin" />
           </div>
         )}
       </div>
 
       {/* Give Up Text Button */}
       <div
-        className={`font-black text-[11px] uppercase tracking-wider text-center px-1.5 py-0.5 rounded transition-colors leading-tight flex items-center space-x-1 ${
+        className={`font-black text-[9.5px] sm:text-[11px] uppercase tracking-wider text-center px-1 sm:px-1.5 py-0.5 rounded transition-colors leading-tight flex items-center space-x-1 whitespace-nowrap ${
           isDark
             ? 'text-red-400 group-hover:text-red-300'
             : 'text-red-600 group-hover:text-red-700'
         }`}
       >
-        <Flag className="w-3 h-3 group-hover:rotate-12 transition-transform duration-200" />
+        <Flag className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:rotate-12 transition-transform duration-200 shrink-0" />
         <span>I Give Up</span>
       </div>
     </button>

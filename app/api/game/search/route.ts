@@ -35,21 +35,22 @@ export async function GET(req: NextRequest) {
     const supabase = createAdminClient();
     const qLower = q.toLowerCase();
 
-    // 1. Fetch characters matching name, alias, japanese name, or romanized name
+    // 1. Fetch characters matching name, alias, japanese name, or romanized name (verified only)
     const { data: chars } = await supabase
       .from('characters')
       .select('id, name, slug, japanese_name, alias, romanized_name, image_url, verification_status, bounty, description, origin, first_arc, first_appearance, devil_fruit_name, devil_fruit_type, race, status')
       .eq('is_active', true)
+      .eq('verification_status', 'verified')
       .or(`name.ilike.%${q}%,alias.ilike.%${q}%,romanized_name.ilike.%${q}%,japanese_name.ilike.%${q}%`)
-      .order('verification_status', { ascending: false })
       .limit(15);
 
-    // 2. Fetch matching aliases from character_aliases table
+    // 2. Fetch matching aliases from character_aliases table (verified only)
     const { data: aliases } = await supabase
       .from('character_aliases')
       .select('character_id, alias, characters!inner(id, name, slug, alias, romanized_name, japanese_name, image_url, is_active, verification_status, bounty, description, origin, first_arc, first_appearance, devil_fruit_name, devil_fruit_type, race, status)')
       .ilike('alias', `%${q}%`)
       .eq('characters.is_active', true)
+      .eq('characters.verification_status', 'verified')
       .limit(15);
 
     const map = new Map<string, SearchResultItem>();

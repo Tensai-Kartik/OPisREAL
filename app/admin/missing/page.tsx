@@ -59,7 +59,7 @@ function AdminMissingDataContent() {
     } else if (filter === 'image') {
       result = result.filter((c) => !c.image_url);
     } else if (filter === 'fruit') {
-      result = result.filter((c) => c.devil_fruit_type === 'Unknown');
+      result = result.filter((c) => !c.devil_fruit_type || c.devil_fruit_type === 'Unknown');
     } else if (filter === 'origin') {
       result = result.filter((c) => !c.origin || c.origin === 'Unknown');
     } else if (filter === 'debut') {
@@ -77,22 +77,23 @@ function AdminMissingDataContent() {
 
   const loadMissingCharacters = () => {
     setIsLoading(true);
-    fetch('/api/admin/characters?limit=2000')
+    fetch('/api/admin/characters?limit=3000')
       .then((res) => res.json())
       .then((data) => {
         const all = data.characters || [];
         const missing = all.filter(
           (c: Character) =>
-            c.verification_status !== 'verified' &&
-            ((c.bounty === null || c.bounty === undefined) ||
-              !c.age ||
-              !c.height ||
-              !c.image_url ||
-              c.devil_fruit_type === 'Unknown' ||
-              !c.origin ||
-              c.origin === 'Unknown' ||
-              (!c.first_appearance && !c.first_arc) ||
-              (!c.alias && !c.romanized_name))
+            c.bounty === null ||
+            c.bounty === undefined ||
+            !c.age ||
+            !c.height ||
+            !c.image_url ||
+            !c.devil_fruit_type ||
+            c.devil_fruit_type === 'Unknown' ||
+            !c.origin ||
+            c.origin === 'Unknown' ||
+            (!c.first_appearance && !c.first_arc) ||
+            (!c.alias && !c.romanized_name)
         );
         setAllCharacters(missing);
         applyFilters(missing, initialQuery, initialFilter);
@@ -248,7 +249,7 @@ function AdminMissingDataContent() {
               if (!c.age) missingList.push('Age');
               if (!c.height) missingList.push('Height');
               if (!c.image_url) missingList.push('Image');
-              if (c.devil_fruit_type === 'Unknown') missingList.push('Fruit');
+              if (!c.devil_fruit_type || c.devil_fruit_type === 'Unknown') missingList.push('Fruit');
               if (!c.origin || c.origin === 'Unknown') missingList.push('Origin');
               if (!c.first_appearance && !c.first_arc) missingList.push('Debut');
               if (!c.alias && !c.romanized_name) missingList.push('Alias');

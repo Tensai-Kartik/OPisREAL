@@ -130,15 +130,19 @@ export default function CharacterSearchInput({
           onFocus={() => query.trim() && setIsOpen(true)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Type a character name, alias, or epithet..."
-          className={`w-full pl-12 pr-28 py-3.5 border-2 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-4 shadow-2xl text-base backdrop-blur-md transition-all duration-200 font-semibold ${
+          placeholder="Search character, alias..."
+          className={`w-full pl-9 sm:pl-12 pr-20 sm:pr-28 py-2.5 sm:py-3.5 border-2 rounded-xl placeholder-slate-400 focus:outline-none focus:ring-4 shadow-2xl text-xs sm:text-base backdrop-blur-md transition-all duration-200 font-semibold ${
             isDark
               ? 'bg-slate-900/95 border-amber-600/50 text-slate-100 focus:border-amber-400 focus:ring-amber-500/25 focus:shadow-[0_0_24px_rgba(245,158,11,0.25)]'
               : 'bg-white/95 border-slate-300 text-slate-900 focus:border-amber-500 focus:ring-amber-500/25 focus:shadow-[0_0_20px_rgba(245,158,11,0.2)] shadow-slate-200/60'
           }`}
         />
-        <div className="absolute left-4 text-amber-500 pointer-events-none transition-transform duration-200 group-focus-within:scale-110">
-          {isLoading ? <Loader2 className="w-5 h-5 animate-spin text-amber-400" /> : <Search className="w-5 h-5" />}
+        <div className="absolute left-3 sm:left-4 text-amber-500 pointer-events-none transition-transform duration-200 group-focus-within:scale-110">
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 sm:w-5 sm:h-5 animate-spin text-amber-400" />
+          ) : (
+            <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+          )}
         </div>
         <button
           onClick={() => {
@@ -148,10 +152,10 @@ export default function CharacterSearchInput({
             }
           }}
           disabled={disabled || !query.trim() || results.length === 0}
-          className="absolute right-2 px-4 py-2 gold-button rounded-lg text-xs font-black uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm active:scale-95 transition-all shrink-0 flex items-center space-x-1"
+          className="absolute right-1.5 sm:right-2 px-2.5 sm:px-4 py-1.5 sm:py-2 gold-button rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm active:scale-95 transition-all shrink-0 flex items-center space-x-1"
         >
           <span>GUESS</span>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
         </button>
       </div>
 

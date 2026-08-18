@@ -72,19 +72,19 @@ export default function FeedbackModal({ theme = 'dark' }: FeedbackModalProps) {
       {/* Trigger Button */}
       <button
         onClick={() => { setIsOpen((v) => !v); setSubmitted(false); setError(null); }}
-        className={`group px-3 py-2.5 rounded-xl border text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 shadow-lg transition-all duration-200 backdrop-blur-md cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
+        className={`group px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border text-xs font-extrabold uppercase tracking-wider flex items-center space-x-1.5 shadow-lg transition-all duration-200 backdrop-blur-md cursor-pointer hover:-translate-y-0.5 active:scale-95 ${
           isDark
             ? 'bg-slate-900/90 border-amber-500/40 text-amber-400 hover:bg-slate-800 hover:border-amber-400 hover:shadow-[0_0_16px_rgba(245,158,11,0.3)]'
             : 'bg-white/95 border-slate-200 text-slate-800 hover:bg-slate-50 hover:border-amber-500 hover:shadow-md'
         }`}
       >
-        <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform duration-200 text-amber-400" />
+        <MessageSquare className="w-4 h-4 group-hover:scale-110 transition-transform duration-200 text-amber-400 shrink-0" />
         <span>Feedback</span>
       </button>
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className={`absolute top-full right-0 mt-2 w-96 rounded-2xl border shadow-2xl z-[100] animate-fadeIn ${
+        <div className={`absolute top-full right-0 mt-2 w-[calc(100vw-24px)] max-w-sm sm:w-96 rounded-2xl border shadow-2xl z-[100] animate-fadeIn ${
           isDark
             ? 'bg-slate-900/98 border-amber-500/40 backdrop-blur-xl'
             : 'bg-white border-slate-200 backdrop-blur-xl shadow-2xl'

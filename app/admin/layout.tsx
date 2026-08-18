@@ -68,46 +68,48 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
       {/* Admin Navigation Bar */}
       <header className="bg-slate-900 border-b border-amber-600/30 sticky top-0 z-40 shadow-xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
-          <div className="flex items-center space-x-3">
-            <Link href="/admin" className="flex items-center space-x-2.5 group">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex items-center justify-between min-h-[56px] sm:h-16 py-2 sm:py-0 gap-2">
+          <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+            <Link href="/admin" className="flex items-center space-x-2 sm:space-x-2.5 group min-w-0">
               <Image
                 src="/logo_bg.png"
                 alt="OP is Real Logo"
                 width={36}
                 height={36}
-                className="w-9 h-9 object-contain drop-shadow-[0_2px_8px_rgba(245,158,11,0.35)] group-hover:scale-105 transition-transform"
+                className="w-8 h-8 sm:w-9 sm:h-9 object-contain drop-shadow-[0_2px_8px_rgba(245,158,11,0.35)] group-hover:scale-105 transition-transform shrink-0"
                 priority
               />
-              <div>
-                <span className="font-extrabold text-slate-100 text-base sm:text-lg uppercase tracking-wider gold-gradient-text">
-                  ONE PIECE DATA CURATION
+              <div className="min-w-0">
+                <span className="font-extrabold text-slate-100 text-xs sm:text-base md:text-lg uppercase tracking-wider gold-gradient-text truncate block">
+                  <span className="hidden sm:inline">ONE PIECE </span>DATA CURATION
                 </span>
-                <span className="text-[11px] text-slate-400 block font-medium">Protected Admin Portal</span>
+                <span className="text-[10px] sm:text-[11px] text-slate-400 block font-medium truncate">
+                  Admin Portal
+                </span>
               </div>
             </Link>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 shrink-0">
             <Link
               href="/"
-              className="px-3.5 py-1.5 bg-slate-800 border border-slate-700 text-amber-400 hover:text-amber-300 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center space-x-1.5"
+              className="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 bg-slate-800 border border-slate-700 text-amber-400 hover:text-amber-300 rounded-lg text-[11px] sm:text-xs font-bold uppercase tracking-wider transition flex items-center space-x-1 sm:space-x-1.5"
             >
-              <Anchor className="w-4 h-4" />
-              <span>Back to Game</span>
+              <Anchor className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+              <span><span className="hidden sm:inline">Back to </span>Game</span>
             </Link>
             <button
               onClick={handleLogout}
-              className="px-3.5 py-1.5 bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900/60 rounded-lg text-xs font-bold uppercase tracking-wider transition flex items-center space-x-1.5"
+              className="px-2.5 py-1.5 sm:px-3.5 sm:py-1.5 bg-red-950/60 border border-red-500/40 text-red-400 hover:bg-red-900/60 rounded-lg text-[11px] sm:text-xs font-bold uppercase tracking-wider transition flex items-center space-x-1 sm:space-x-1.5 cursor-pointer"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               <span>Logout</span>
             </button>
           </div>
         </div>
 
         {/* Sub-header Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 overflow-x-auto border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 flex space-x-1 overflow-x-auto border-t border-slate-800">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -115,13 +117,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center space-x-2 px-4 py-3 text-xs font-bold uppercase tracking-wider border-b-2 transition whitespace-nowrap ${
+                className={`flex items-center space-x-1.5 sm:space-x-2 px-3 sm:px-4 py-2.5 sm:py-3 text-[11px] sm:text-xs font-bold uppercase tracking-wider border-b-2 transition whitespace-nowrap shrink-0 ${
                   isActive
                     ? 'border-amber-500 text-amber-400 bg-amber-950/30'
                     : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <span>{item.label}</span>
               </Link>
             );
