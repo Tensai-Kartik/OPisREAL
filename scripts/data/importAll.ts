@@ -102,10 +102,19 @@ export async function runFullImport(): Promise<ImportSummaryReport> {
 
   console.log(`Unique characters consolidated: ${combinedMap.size}`);
 
-  // Fetch existing characters in bulk from DB
-  const { data: dbCharacters } = await supabase
-    .from('characters')
-    .select('id, name, slug, image_url, bounty, age, height');
+  // Fetch existing characters in bulk from DB using chunking
+  let dbCharacters: any[] = [];
+  let from = 0;
+  while (true) {
+    const { data } = await supabase
+      .from('characters')
+      .select('id, name, slug, image_url, bounty, age, height, verification_status')
+      .range(from, from + 999);
+    if (!data || data.length === 0) break;
+    dbCharacters = dbCharacters.concat(data);
+    if (data.length < 1000) break;
+    from += 1000;
+  }
 
   const existingSlugMap = new Map((dbCharacters || []).map((c) => [c.slug, c]));
 
@@ -125,6 +134,11 @@ export async function runFullImport(): Promise<ImportSummaryReport> {
         if (existing) {
           charId = existing.id;
           charactersMatched++;
+
+          // Protect verified characters from being overwritten by automated imports
+          if (existing.verification_status === 'verified') {
+            return;
+          }
 
           const updateObj: Record<string, any> = {
             name: norm.name,

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight, Tag } from 'lucide-react';
+import { HelpCircle, Edit3, Loader2, Search, Filter, Trash2, ChevronLeft, ChevronRight, Tag, ShieldCheck, Clock } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
 
@@ -13,30 +13,33 @@ function AdminMissingDataContent() {
 
   const initialPage = parseInt(searchParams?.get('page') || '1', 10) || 1;
   const initialFilter = searchParams?.get('filter') || 'all';
+  const initialStatus = searchParams?.get('status') || 'all';
   const initialQuery = searchParams?.get('q') || '';
 
   const [allCharacters, setAllCharacters] = useState<Character[]>([]);
   const [filteredCharacters, setFilteredCharacters] = useState<Character[]>([]);
   const [query, setQuery] = useState(initialQuery);
   const [missingFilter, setMissingFilter] = useState(initialFilter);
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [page, setPage] = useState(initialPage);
   const [isLoading, setIsLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const itemsPerPage = 18;
 
-  const updateUrl = (p: number, f: string, q: string) => {
+  const updateUrl = (p: number, f: string, s: string, q: string) => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams();
     if (p > 1) params.set('page', p.toString());
     if (f && f !== 'all') params.set('filter', f);
+    if (s && s !== 'all') params.set('status', s);
     if (q.trim()) params.set('q', q.trim());
     const qs = params.toString();
     const newUrl = qs ? `/admin/missing?${qs}` : '/admin/missing';
     window.history.replaceState(null, '', newUrl);
   };
 
-  const applyFilters = (list: Character[], q: string, filter: string, targetPage?: number) => {
+  const applyFilters = (list: Character[], q: string, filter: string, status: string, targetPage?: number) => {
     let result = list;
 
     if (q.trim()) {
@@ -50,6 +53,14 @@ function AdminMissingDataContent() {
       );
     }
 
+    // Status filter
+    if (status === 'unverified') {
+      result = result.filter((c) => c.verification_status !== 'verified');
+    } else if (status === 'verified') {
+      result = result.filter((c) => c.verification_status === 'verified');
+    }
+
+    // Missing fields filter
     if (filter === 'bounty') {
       result = result.filter((c) => c.bounty === null || c.bounty === undefined);
     } else if (filter === 'age') {
@@ -71,7 +82,7 @@ function AdminMissingDataContent() {
     setFilteredCharacters(result);
     if (targetPage !== undefined) {
       setPage(targetPage);
-      updateUrl(targetPage, filter, q);
+      updateUrl(targetPage, filter, status, q);
     }
   };
 
@@ -96,7 +107,7 @@ function AdminMissingDataContent() {
             (!c.alias && !c.romanized_name)
         );
         setAllCharacters(missing);
-        applyFilters(missing, initialQuery, initialFilter);
+        applyFilters(missing, initialQuery, initialFilter, initialStatus);
       })
       .catch(() => {
         setAllCharacters([]);
@@ -111,17 +122,22 @@ function AdminMissingDataContent() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    applyFilters(allCharacters, query, missingFilter, 1);
+    applyFilters(allCharacters, query, missingFilter, statusFilter, 1);
   };
 
   const handleFilterChange = (filter: string) => {
     setMissingFilter(filter);
-    applyFilters(allCharacters, query, filter, 1);
+    applyFilters(allCharacters, query, filter, statusFilter, 1);
+  };
+
+  const handleStatusFilterChange = (status: string) => {
+    setStatusFilter(status);
+    applyFilters(allCharacters, query, missingFilter, status, 1);
   };
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-    updateUrl(newPage, missingFilter, query);
+    updateUrl(newPage, missingFilter, statusFilter, query);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -137,7 +153,7 @@ function AdminMissingDataContent() {
       if (data.success) {
         const updated = allCharacters.filter((c) => c.id !== char.id);
         setAllCharacters(updated);
-        applyFilters(updated, query, missingFilter);
+        applyFilters(updated, query, missingFilter, statusFilter);
       } else {
         alert(data.error || 'Failed to delete');
       }
@@ -155,7 +171,7 @@ function AdminMissingDataContent() {
   const startIndex = (validPage - 1) * itemsPerPage;
   const currentCharacters = filteredCharacters.slice(startIndex, startIndex + itemsPerPage);
 
-  const currentFromUrl = `/admin/missing?page=${validPage}&filter=${missingFilter}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ''}`;
+  const currentFromUrl = `/admin/missing?page=${validPage}&filter=${missingFilter}&status=${statusFilter}${query.trim() ? `&q=${encodeURIComponent(query.trim())}` : ''}`;
 
   if (isLoading) {
     return (
@@ -187,17 +203,17 @@ function AdminMissingDataContent() {
       </div>
 
       {/* Search Bar & Filter Controls */}
-      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
-        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-96 flex items-center gap-2">
+      <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 sm:gap-4 shadow-lg">
+        <form onSubmit={handleSearchSubmit} className="relative w-full lg:w-80 flex items-center gap-2">
           <div className="relative flex-1">
             <input
               type="text"
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                applyFilters(allCharacters, e.target.value, missingFilter);
+                applyFilters(allCharacters, e.target.value, missingFilter, statusFilter);
               }}
-              placeholder="Search missing characters by name, alias, origin..."
+              placeholder="Search by name, alias, origin..."
               className="w-full pl-10 pr-4 py-2 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500"
             />
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
@@ -210,34 +226,50 @@ function AdminMissingDataContent() {
           </button>
         </form>
 
-        <div className="flex items-center space-x-3 w-full md:w-auto">
-          <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold">
-            <Filter className="w-4 h-4 text-sky-400" />
-            <span>Missing:</span>
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full lg:w-auto">
+          {/* Missing Field Filter */}
+          <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold flex-1 sm:flex-initial">
+            <Filter className="w-4 h-4 text-sky-400 shrink-0" />
+            <span className="shrink-0">Missing:</span>
+            <select
+              value={missingFilter}
+              onChange={(e) => handleFilterChange(e.target.value)}
+              className="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-sky-500 cursor-pointer"
+            >
+              <option value="all">All Missing Fields</option>
+              <option value="bounty">Missing Bounty (Undisclosed/Null)</option>
+              <option value="age">Missing Age</option>
+              <option value="height">Missing Height</option>
+              <option value="image">Missing Portrait</option>
+              <option value="fruit">Unknown Devil Fruit</option>
+              <option value="origin">Unknown Origin</option>
+              <option value="debut">Missing Debut / Arc</option>
+              <option value="alias">Missing Alias / Epithet</option>
+            </select>
           </div>
-          <select
-            value={missingFilter}
-            onChange={(e) => handleFilterChange(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-sky-500 cursor-pointer"
-          >
-            <option value="all">All Missing Fields</option>
-            <option value="bounty">Missing Bounty (Undisclosed/Null)</option>
-            <option value="age">Missing Age</option>
-            <option value="height">Missing Height</option>
-            <option value="image">Missing Portrait</option>
-            <option value="fruit">Unknown Devil Fruit</option>
-            <option value="origin">Unknown Origin</option>
-            <option value="debut">Missing Debut / Arc</option>
-            <option value="alias">Missing Alias / Epithet</option>
-          </select>
+
+          {/* Verification Status Filter */}
+          <div className="flex items-center space-x-2 text-xs text-slate-400 font-semibold flex-1 sm:flex-initial">
+            <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="shrink-0">Status:</span>
+            <select
+              value={statusFilter}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
+              className="w-full sm:w-auto bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-200 px-3 py-2 focus:outline-none focus:border-amber-500 cursor-pointer"
+            >
+              <option value="all">All Statuses (Verified & Unverified)</option>
+              <option value="unverified">Unverified Only (Sourced)</option>
+              <option value="verified">Verified Only</option>
+            </select>
+          </div>
         </div>
       </div>
 
       {/* Grid of Missing Characters */}
       {filteredCharacters.length === 0 ? (
         <div className="p-12 bg-slate-900 border border-slate-800 rounded-xl text-center text-slate-400 text-sm">
-          {query.trim() || missingFilter !== 'all'
-            ? 'No missing characters matched the search criteria.'
+          {query.trim() || missingFilter !== 'all' || statusFilter !== 'all'
+            ? 'No missing characters matched the search and filter criteria.'
             : 'No missing critical fields detected!'}
         </div>
       ) : (
@@ -255,30 +287,57 @@ function AdminMissingDataContent() {
               if (!c.alias && !c.romanized_name) missingList.push('Alias');
 
               const displayAlias = c.alias || c.romanized_name;
+              const isVerified = c.verification_status === 'verified';
 
               return (
                 <div key={c.id} className="p-5 bg-slate-900 border border-slate-800 rounded-xl flex flex-col justify-between space-y-4 shadow-md hover:border-amber-500/50 hover:shadow-[0_0_16px_rgba(245,158,11,0.2)] transition-all duration-200">
-                  <div className="flex items-start space-x-3">
-                    <CharacterAvatar
-                      src={c.image_url}
-                      name={c.name}
-                      size="lg"
-                      className="border-slate-700"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <div className="font-bold text-slate-100 text-base truncate">{c.name}</div>
-                      {c.japanese_name && (
-                        <div className="text-[11px] text-slate-400 truncate">{c.japanese_name}</div>
-                      )}
-                      {displayAlias && (
-                        <div className="text-[11px] text-amber-400 truncate flex items-center space-x-1 mt-0.5">
-                          <Tag className="w-3 h-3 inline shrink-0" />
-                          <span>{displayAlias}</span>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start space-x-3 min-w-0 flex-1">
+                        <CharacterAvatar
+                          src={c.image_url}
+                          name={c.name}
+                          size="lg"
+                          className="border-slate-700 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-bold text-slate-100 text-base truncate">{c.name}</div>
+                          {c.japanese_name && (
+                            <div className="text-[11px] text-slate-400 truncate">{c.japanese_name}</div>
+                          )}
+                          {displayAlias && (
+                            <div className="text-[11px] text-amber-400 truncate flex items-center space-x-1 mt-0.5">
+                              <Tag className="w-3 h-3 inline shrink-0" />
+                              <span>{displayAlias}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <div className="text-[11px] text-sky-400 font-semibold mt-1">
-                        Missing: {missingList.join(', ')}
                       </div>
+
+                      {/* Status Badge */}
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border flex items-center space-x-1 shrink-0 ${
+                          isVerified
+                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40'
+                            : 'bg-amber-950/60 text-amber-300 border-amber-500/30'
+                        }`}
+                      >
+                        {isVerified ? (
+                          <>
+                            <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                            <span>Verified</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-3 h-3 text-amber-400" />
+                            <span>Unverified</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-sky-400 font-semibold bg-sky-950/30 px-2.5 py-1.5 rounded-lg border border-sky-500/20">
+                      Missing: {missingList.join(', ')}
                     </div>
                   </div>
 
