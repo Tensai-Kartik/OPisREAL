@@ -133,8 +133,7 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     firstArc?: string | null
   ) => {
     const debut = parseDebutDisplay(attr.displayValue, firstArc);
-    const isEarlier = attr.status === 'earlier' || attr.status === 'lower';
-    const isLater = attr.status === 'later' || attr.status === 'higher';
+    const displayArc = debut.arcName !== 'Unknown' ? debut.arcName : (attr.displayValue || 'Unknown');
 
     return (
       <div
@@ -142,25 +141,8 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
         className={`interactive-cell p-1.5 rounded-lg border flex flex-col items-center justify-center min-h-[54px] relative transition-all duration-200 ${getAnimationClass(isLatest)} ${getCellStyle(attr.status, isLatest)}`}
       >
         <div className="font-extrabold text-[11.5px] text-center leading-tight drop-shadow-sm line-clamp-2 px-0.5">
-          {debut.arcName}
+          {displayArc}
         </div>
-        {isEarlier && (
-          <div className="flex items-center text-[9.5px] font-black text-amber-200 mt-0.5 animate-bounce">
-            <ArrowDown className="w-3 h-3 stroke-[3]" />
-            <span>LOWER</span>
-          </div>
-        )}
-        {isLater && (
-          <div className="flex items-center text-[9.5px] font-black text-amber-200 mt-0.5 animate-bounce">
-            <ArrowUp className="w-3 h-3 stroke-[3]" />
-            <span>HIGHER</span>
-          </div>
-        )}
-        {!isEarlier && !isLater && debut.episodeText && (
-          <div className="text-[9.5px] opacity-90 font-bold text-center mt-0.5 leading-tight text-amber-200">
-            ({debut.episodeText})
-          </div>
-        )}
       </div>
     );
   };

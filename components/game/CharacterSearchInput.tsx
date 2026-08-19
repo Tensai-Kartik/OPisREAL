@@ -102,19 +102,25 @@ export default function CharacterSearchInput({
     setIsOpen(false);
   };
 
+  // Filter out already guessed characters from autocomplete list
+  const availableResults = results.filter((item) => !guessedIds.includes(item.id));
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (results.length > 0) {
-        const target = selectedIndex >= 0 && selectedIndex < results.length ? results[selectedIndex] : results[0];
+      if (availableResults.length > 0) {
+        const target =
+          selectedIndex >= 0 && selectedIndex < availableResults.length
+            ? availableResults[selectedIndex]
+            : availableResults[0];
         handleSelect(target);
       }
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      setSelectedIndex((prev) => (prev < availableResults.length - 1 ? prev + 1 : 0));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : availableResults.length - 1));
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
@@ -146,12 +152,15 @@ export default function CharacterSearchInput({
         </div>
         <button
           onClick={() => {
-            if (results.length > 0) {
-              const target = selectedIndex >= 0 ? results[selectedIndex] : results[0];
+            if (availableResults.length > 0) {
+              const target =
+                selectedIndex >= 0 && selectedIndex < availableResults.length
+                  ? availableResults[selectedIndex]
+                  : availableResults[0];
               handleSelect(target);
             }
           }}
-          disabled={disabled || !query.trim() || results.length === 0}
+          disabled={disabled || !query.trim() || availableResults.length === 0}
           className="absolute right-1.5 sm:right-2 px-2.5 sm:px-4 py-1.5 sm:py-2 gold-button rounded-lg text-[11px] sm:text-xs font-black uppercase tracking-wider disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-sm active:scale-95 transition-all shrink-0 flex items-center space-x-1"
         >
           <span>GUESS</span>
@@ -164,20 +173,21 @@ export default function CharacterSearchInput({
         <div className={`absolute top-full left-0 right-0 mt-2 border rounded-xl shadow-2xl overflow-hidden z-50 backdrop-blur-2xl max-h-84 overflow-y-auto animate-fadeIn ${
           isDark ? 'bg-slate-900/98 border-amber-600/60 shadow-[0_16px_36px_rgba(0,0,0,0.8)]' : 'bg-white/98 border-slate-200 shadow-slate-300/50'
         }`}>
-          {results.length === 0 ? (
+          {availableResults.length === 0 ? (
             <div className={`p-4 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              No matching characters found in canon database.
+              {results.length > 0
+                ? 'All matching characters have already been guessed.'
+                : 'No matching characters found in canon database.'}
             </div>
           ) : (
-            results.map((item, idx) => {
-              const isAlreadyGuessed = guessedIds.includes(item.id);
+            availableResults.map((item, idx) => {
               const isSelected = idx === (selectedIndex >= 0 ? selectedIndex : 0);
               const displayAlias = item.matchedAlias ? `"${item.matchedAlias}"` : item.alias;
 
               return (
                 <div
                   key={item.id}
-                  onClick={() => !isAlreadyGuessed && handleSelect(item)}
+                  onClick={() => handleSelect(item)}
                   className={`w-full flex items-center justify-between p-3 border-b cursor-pointer transition-all duration-150 group/item ${
                     isDark
                       ? `border-slate-800/70 ${
@@ -190,7 +200,7 @@ export default function CharacterSearchInput({
                             ? 'bg-amber-50 text-amber-900 border-l-4 border-l-amber-500 font-bold'
                             : 'hover:bg-slate-50 text-slate-900 hover:translate-x-1'
                         }`
-                  } ${isAlreadyGuessed ? 'opacity-40 cursor-not-allowed hover:translate-x-0' : ''}`}
+                  }`}
                 >
                   <div className="flex items-center space-x-3 min-w-0 flex-1 pr-2 text-left">
                     <CharacterAvatar
@@ -204,11 +214,11 @@ export default function CharacterSearchInput({
                         isDark ? 'font-extrabold text-slate-100 group-hover/item:text-amber-300' : 'font-extrabold text-slate-900 group-hover/item:text-amber-800'
                       }`}>
                         <span>{item.name}</span>
-                        {item.bounty && (
-                          <span className="text-[10px] px-1.5 py-0.2 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-md font-bold shrink-0">
+                        {typeof item.bounty === 'number' && item.bounty > 0 ? (
+                          <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/30 text-amber-400 rounded-md font-bold shrink-0">
                             {item.bounty.toLocaleString()} ฿
                           </span>
-                        )}
+                        ) : null}
                       </div>
                       {displayAlias && (
                         <div className={`text-[11px] font-semibold truncate ${isDark ? 'text-amber-400/90' : 'text-amber-600'}`}>
@@ -217,13 +227,7 @@ export default function CharacterSearchInput({
                       )}
                     </div>
                   </div>
-                  {isAlreadyGuessed ? (
-                    <span className="text-[11px] px-2 py-0.5 bg-slate-800 text-slate-400 rounded font-semibold shrink-0">
-                      Guessed
-                    </span>
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-amber-500/50 group-hover/item:text-amber-400 group-hover/item:translate-x-0.5 transition-all shrink-0" />
-                  )}
+                  <ChevronRight className="w-4 h-4 text-amber-500/50 group-hover/item:text-amber-400 group-hover/item:translate-x-0.5 transition-all shrink-0" />
                 </div>
               );
             })

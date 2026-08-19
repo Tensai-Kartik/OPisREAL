@@ -199,7 +199,7 @@ export async function GET(req: NextRequest) {
     // Sort by relevance score descending
     const results = Array.from(map.values())
       .sort((a, b) => (b.score || 0) - (a.score || 0))
-      .slice(0, 8);
+      .slice(0, 15);
 
     return NextResponse.json({ results });
   } catch (err: any) {

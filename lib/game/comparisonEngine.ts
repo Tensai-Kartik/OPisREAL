@@ -172,43 +172,38 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
     displayValue: guess.origin,
   };
 
-  // First Appearance / Debut (Show Arc name + Episode in braces)
-  const formatDebut = (c: Character) => {
-    return formatDebutString(c.first_appearance, c.first_arc);
-  };
-
-  const guessDebut = formatDebut(guess);
-  const targetDebut = formatDebut(target);
-
+  // Debut Arc: If debut arc is same turn it green ('correct'), otherwise red ('incorrect')
   const guessParsed = parseDebutDisplay(guess.first_appearance, guess.first_arc);
   const targetParsed = parseDebutDisplay(target.first_appearance, target.first_arc);
 
-  const isExactDebut =
-    guessDebut.toLowerCase() === targetDebut.toLowerCase() &&
-    guessDebut !== 'Unknown';
+  const guessArc =
+    guessParsed.arcName !== 'Unknown' && guessParsed.arcName
+      ? guessParsed.arcName
+      : (guess.first_arc || guess.first_appearance || 'Unknown');
+
+  const targetArc =
+    targetParsed.arcName !== 'Unknown' && targetParsed.arcName
+      ? targetParsed.arcName
+      : (target.first_arc || target.first_appearance || 'Unknown');
 
   const isSameArc =
-    guessParsed.arcName !== 'Unknown' &&
-    targetParsed.arcName !== 'Unknown' &&
-    guessParsed.arcName.toLowerCase() === targetParsed.arcName.toLowerCase();
+    guessArc !== 'Unknown' &&
+    targetArc !== 'Unknown' &&
+    guessArc.toLowerCase() === targetArc.toLowerCase();
 
-  let debutStatus: 'correct' | 'partial' | 'earlier' | 'later' | 'incorrect' | 'unknown' = 'incorrect';
-  if (guessDebut === 'Unknown' || targetDebut === 'Unknown') {
+  let debutStatus: 'correct' | 'incorrect' | 'unknown' = 'incorrect';
+  if (guessArc === 'Unknown' || targetArc === 'Unknown') {
     debutStatus = 'unknown';
-  } else if (isExactDebut) {
-    debutStatus = 'correct';
   } else if (isSameArc) {
-    debutStatus = 'partial';
-  } else if (targetParsed.chronologicalRank < guessParsed.chronologicalRank) {
-    debutStatus = 'earlier';
-  } else if (targetParsed.chronologicalRank > guessParsed.chronologicalRank) {
-    debutStatus = 'later';
+    debutStatus = 'correct';
+  } else {
+    debutStatus = 'incorrect';
   }
 
   const firstAppearanceMatch: AttributeMatch = {
     status: debutStatus,
-    value: guessDebut,
-    displayValue: guessDebut,
+    value: guessArc,
+    displayValue: guessArc,
   };
 
   const isCorrect = guess.id === target.id;
