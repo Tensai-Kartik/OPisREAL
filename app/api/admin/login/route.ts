@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEnvVar } from '@/lib/supabase/admin';
+import { verifyAdminPassword, generateAdminSessionToken, getAdminPassword } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,19 +8,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json().catch(() => ({}));
     const password = body.password?.trim();
 
-    const expectedPassword = (
-      process.env.ADMIN_PASSWORD ||
-      getEnvVar('ADMIN_PASSWORD') ||
-      'opisreal2026'
-    ).trim();
+    const configuredPassword = getAdminPassword();
+    if (!configuredPassword) {
+      return NextResponse.json(
+        { error: 'Admin access is not configured. Please set the ADMIN_PASSWORD environment variable.' },
+        { status: 503 }
+      );
+    }
 
-    if (password === expectedPassword) {
+    if (verifyAdminPassword(password)) {
+      const sessionToken = generateAdminSessionToken(configuredPassword);
       const response = NextResponse.json({ success: true });
-      response.cookies.set('admin_session', 'authenticated_op_admin_2026', {
+      response.cookies.set('admin_session', sessionToken, {
         httpOnly: true,
         path: '/',
         maxAge: 60 * 60 * 24 * 7, // 7 days
         sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
       });
       return response;
     }
@@ -31,4 +35,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Authentication error' }, { status: 500 });
   }
 }
-

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isValidAdminSession } from '@/lib/auth/admin';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const session = req.cookies.get('admin_session')?.value;
-  const isAuthenticated = session === 'authenticated_op_admin_2026';
+  const sessionToken = req.cookies.get('admin_session')?.value;
+  const isAuthenticated = isValidAdminSession(sessionToken);
   return NextResponse.json({ authenticated: isAuthenticated });
 }
