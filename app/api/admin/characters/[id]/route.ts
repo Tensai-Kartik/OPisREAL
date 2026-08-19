@@ -140,6 +140,65 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const supabase = createAdminClient();
+
+    const allowedFields: string[] = [
+      'verification_status',
+      'is_active',
+      'is_canon',
+      'name',
+      'alias',
+      'romanized_name',
+      'japanese_name',
+      'bounty',
+      'age',
+      'height',
+      'gender',
+      'race',
+      'status',
+      'origin',
+      'first_appearance',
+      'first_arc',
+      'birthday',
+      'blood_type',
+      'description',
+      'devil_fruit_name',
+      'devil_fruit_type',
+      'devil_fruit_model',
+      'image_url',
+    ];
+
+    const updates: Record<string, any> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        updates[key] = body[key];
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('characters')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, character: data });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Update failed' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Save,
   ShieldCheck,
+  ShieldOff,
   Eye,
   Plus,
   X,
@@ -240,6 +241,7 @@ function CharacterEditContent() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [showEvidence, setShowEvidence] = useState(false);
@@ -351,6 +353,33 @@ function CharacterEditContent() {
       })
       .catch(() => setErrorMsg('Save error'))
       .finally(() => setIsSaving(false));
+  };
+
+  const handleUnverify = async () => {
+    if (!character) return;
+    setIsSaving(true);
+    setErrorMsg(null);
+    setSaveSuccess(false);
+
+    try {
+      const res = await fetch(`/api/admin/characters/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verification_status: 'sourced' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCharacter((prev) => (prev ? { ...prev, verification_status: 'sourced' } : null));
+        setSuccessMsg(`Character "${character.name}" has been marked as unverified (sourced).`);
+        setTimeout(() => setSuccessMsg(null), 4000);
+      } else {
+        setErrorMsg(data.error || 'Failed to unverify character');
+      }
+    } catch {
+      setErrorMsg('Network error while unverifying character');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Helper functions for Haki
@@ -481,13 +510,27 @@ function CharacterEditContent() {
 
         <div className="flex items-center space-x-2.5">
           <button
+            type="button"
             onClick={() => setShowEvidence(!showEvidence)}
             className="px-3.5 py-2 bg-slate-950 border border-amber-600/40 text-amber-400 hover:bg-slate-800 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 cursor-pointer transition"
           >
             <Eye className="w-4 h-4" />
             <span>{showEvidence ? 'Hide Sources' : 'Inspect Evidence'}</span>
           </button>
+          {character.verification_status === 'verified' && (
+            <button
+              type="button"
+              onClick={handleUnverify}
+              disabled={isSaving || isDeleting}
+              title="Mark as unverified (sourced)"
+              className="px-3.5 py-2 bg-slate-800/90 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500/50 text-slate-300 hover:text-amber-300 rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer shadow-md group"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin text-amber-400" /> : <ShieldOff className="w-4 h-4 text-amber-400/80 group-hover:text-amber-300 transition" />}
+              <span>Mark Unverified</span>
+            </button>
+          )}
           <button
+            type="button"
             onClick={handleDelete}
             disabled={isDeleting || isSaving}
             className="px-3.5 py-2 bg-red-950/80 hover:bg-red-900 border border-red-500/50 text-red-200 hover:text-white rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 transition disabled:opacity-50 cursor-pointer"
@@ -496,6 +539,7 @@ function CharacterEditContent() {
             <span>Delete</span>
           </button>
           <button
+            type="button"
             onClick={handleSave}
             disabled={isSaving || isDeleting}
             className="px-5 py-2 gold-button rounded-lg text-xs font-bold uppercase flex items-center space-x-1.5 disabled:opacity-50 cursor-pointer shadow-md"
@@ -505,6 +549,13 @@ function CharacterEditContent() {
           </button>
         </div>
       </div>
+
+      {successMsg && (
+        <div className="p-4 bg-amber-950/80 border border-amber-500/50 rounded-xl text-amber-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">
+          <CheckCircle2 className="w-4 h-4 text-amber-400" />
+          <span>{successMsg}</span>
+        </div>
+      )}
 
       {saveSuccess && (
         <div className="p-4 bg-green-950/80 border border-green-500/50 rounded-xl text-green-300 text-xs font-bold flex items-center space-x-2 animate-fadeIn">

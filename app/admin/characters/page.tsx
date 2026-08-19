@@ -17,6 +17,8 @@ import {
   Plus,
   X,
   Layers,
+  ShieldOff,
+  ShieldCheck,
 } from 'lucide-react';
 import { Character } from '@/types/character';
 import CharacterAvatar from '@/components/game/CharacterAvatar';
@@ -38,6 +40,7 @@ function AdminCharactersContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const isInitialMount = useRef(true);
@@ -124,6 +127,42 @@ function AdminCharactersContent() {
       alert('Network error deleting character');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleToggleVerification = async (char: Character) => {
+    const isCurrentlyVerified = char.verification_status === 'verified';
+    const newStatus = isCurrentlyVerified ? 'sourced' : 'verified';
+    const actionLabel = isCurrentlyVerified ? 'mark as unverified' : 'mark as verified';
+
+    setUpdatingId(char.id);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch(`/api/admin/characters/${char.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verification_status: newStatus }),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setCharacters((prev) =>
+          prev.map((c) => (c.id === char.id ? { ...c, verification_status: newStatus } : c))
+        );
+        setSuccessMsg(
+          isCurrentlyVerified
+            ? `Character "${char.name}" has been marked as unverified (sourced).`
+            : `Character "${char.name}" has been marked as verified!`
+        );
+        setTimeout(() => setSuccessMsg(null), 3500);
+      } else {
+        alert(data.error || `Failed to ${actionLabel}`);
+      }
+    } catch {
+      alert(`Network error while trying to ${actionLabel}`);
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -324,6 +363,37 @@ function AdminCharactersContent() {
                     <td className="p-4">{renderStatusBadge(c.verification_status)}</td>
                     <td className="p-4 text-right">
                       <div className="inline-flex items-center space-x-2">
+                        {/* Working Unverify / Verify Button */}
+                        {c.verification_status === 'verified' ? (
+                          <button
+                            onClick={() => handleToggleVerification(c)}
+                            disabled={updatingId === c.id || deletingId === c.id}
+                            title={`Mark "${c.name}" as Unverified (Sourced)`}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800/90 hover:bg-amber-950/60 border border-slate-700 hover:border-amber-500/50 text-slate-300 hover:text-amber-300 rounded-lg font-bold uppercase transition disabled:opacity-50 cursor-pointer text-xs group shadow-sm"
+                          >
+                            {updatingId === c.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                            ) : (
+                              <ShieldOff className="w-3.5 h-3.5 text-amber-400/80 group-hover:text-amber-300 transition" />
+                            )}
+                            <span>Unverify</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleVerification(c)}
+                            disabled={updatingId === c.id || deletingId === c.id}
+                            title={`Mark "${c.name}" as Verified`}
+                            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-green-950/50 hover:bg-green-900/70 border border-green-500/40 text-green-300 hover:text-green-100 rounded-lg font-bold uppercase transition disabled:opacity-50 cursor-pointer text-xs shadow-sm"
+                          >
+                            {updatingId === c.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-green-400" />
+                            ) : (
+                              <ShieldCheck className="w-3.5 h-3.5 text-green-400" />
+                            )}
+                            <span>Verify</span>
+                          </button>
+                        )}
+
                         <Link
                           href={`/admin/characters/${c.id}?from=${encodeURIComponent(currentFromUrl)}`}
                           className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-lg font-bold uppercase transition text-xs"
@@ -333,7 +403,7 @@ function AdminCharactersContent() {
                         </Link>
                         <button
                           onClick={() => handleDeleteCharacter(c)}
-                          disabled={deletingId === c.id}
+                          disabled={deletingId === c.id || updatingId === c.id}
                           title="Delete Character Duplicate"
                           className="inline-flex items-center space-x-1 px-2.5 py-1.5 bg-red-950/60 hover:bg-red-900/80 border border-red-500/40 text-red-300 hover:text-red-100 rounded-lg font-bold transition disabled:opacity-50 cursor-pointer text-xs"
                         >
