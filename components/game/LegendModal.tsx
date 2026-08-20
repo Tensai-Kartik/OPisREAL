@@ -60,10 +60,10 @@ export default function LegendModal({ isOpen, onClose }: LegendModalProps) {
               <ArrowDown className="w-4 h-4 text-amber-400" />
             </div>
             <div>
-              <div className="font-extrabold uppercase tracking-wider text-amber-400">Up / Down Arrows — Numeric Values</div>
+              <div className="font-extrabold uppercase tracking-wider text-amber-400">Up / Down Arrows — Numeric &amp; Timeline Values</div>
               <div className="text-slate-200 space-y-1">
-                <div><strong>⬆️ HIGHER:</strong> Secret target has higher Bounty, Age, or Height.</div>
-                <div><strong>⬇️ LOWER:</strong> Secret target has lower Bounty, Age, or Height.</div>
+                <div><strong>⬆️ HIGHER / LATER:</strong> Secret target has higher Bounty, Age, Height, or later Debut Arc / Episode.</div>
+                <div><strong>⬇️ LOWER / EARLIER:</strong> Secret target has lower Bounty, Age, Height, or earlier Debut Arc / Episode.</div>
               </div>
             </div>
           </div>

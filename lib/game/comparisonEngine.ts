@@ -1,5 +1,5 @@
 import { Character } from '@/types/character';
-import { AttributeMatch, GuessComparison } from '@/types/game';
+import { AttributeMatch, GuessComparison, MatchStatus } from '@/types/game';
 import { formatDebutString, parseDebutDisplay } from './debutHelper';
 
 function compareNumeric(guessVal?: number | null, targetVal?: number | null, unit: string = ''): AttributeMatch {
@@ -172,7 +172,7 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
     displayValue: guess.origin,
   };
 
-  // Debut Arc: If debut arc is same turn it green ('correct'), otherwise red ('incorrect')
+  // Debut Arc: If debut arc is same turn it green ('correct'), otherwise 'higher' / 'lower' based on timeline
   const guessParsed = parseDebutDisplay(guess.first_appearance, guess.first_arc);
   const targetParsed = parseDebutDisplay(target.first_appearance, target.first_arc);
 
@@ -191,11 +191,22 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
     targetArc !== 'Unknown' &&
     guessArc.toLowerCase() === targetArc.toLowerCase();
 
-  let debutStatus: 'correct' | 'incorrect' | 'unknown' = 'incorrect';
+  let debutStatus: MatchStatus = 'incorrect';
   if (guessArc === 'Unknown' || targetArc === 'Unknown') {
     debutStatus = 'unknown';
   } else if (isSameArc) {
     debutStatus = 'correct';
+  } else if (
+    targetParsed.chronologicalRank !== 9999 &&
+    guessParsed.chronologicalRank !== 9999
+  ) {
+    if (targetParsed.chronologicalRank > guessParsed.chronologicalRank) {
+      debutStatus = 'higher';
+    } else if (targetParsed.chronologicalRank < guessParsed.chronologicalRank) {
+      debutStatus = 'lower';
+    } else {
+      debutStatus = 'incorrect';
+    }
   } else {
     debutStatus = 'incorrect';
   }
@@ -203,7 +214,7 @@ export function compareCharacters(guess: Character, target: Character): GuessCom
   const firstAppearanceMatch: AttributeMatch = {
     status: debutStatus,
     value: guessArc,
-    displayValue: guessArc,
+    displayValue: formatDebutString(guess.first_appearance, guess.first_arc),
   };
 
   const isCorrect = guess.id === target.id;

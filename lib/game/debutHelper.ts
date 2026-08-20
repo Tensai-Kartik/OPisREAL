@@ -92,10 +92,32 @@ export const ONE_PIECE_ARCS: ArcInfo[] = [
  */
 export function findArcByName(arcName?: string | null): ArcInfo | undefined {
   if (!arcName) return undefined;
-  const clean = arcName.trim().toLowerCase();
-  return ONE_PIECE_ARCS.find((a) =>
-    a.name.toLowerCase() === clean || a.aliases.some((alias) => clean === alias || clean.includes(alias))
-  );
+  let clean = arcName.trim().toLowerCase();
+  clean = clean.replace(/\s*(?:arc|saga)\s*$/i, '').trim();
+  if (!clean) return undefined;
+
+  // Pass 1: Exact matches against arc name or aliases
+  const exact = ONE_PIECE_ARCS.find((a) => {
+    const aName = a.name.toLowerCase().replace(/\s*(?:arc|saga)\s*$/i, '').trim();
+    if (aName === clean) return true;
+    return a.aliases.some((alias) => {
+      const aliasClean = alias.toLowerCase().replace(/\s*(?:arc|saga)\s*$/i, '').trim();
+      return aliasClean === clean;
+    });
+  });
+  if (exact) return exact;
+
+  // Pass 2: Clean input contains full arc name or full alias as a phrase
+  const fuzzy = ONE_PIECE_ARCS.find((a) => {
+    const aName = a.name.toLowerCase().replace(/\s*(?:arc|saga)\s*$/i, '').trim();
+    if (clean.includes(aName)) return true;
+    return a.aliases.some((alias) => {
+      const aliasClean = alias.toLowerCase().replace(/\s*(?:arc|saga)\s*$/i, '').trim();
+      return clean.includes(aliasClean);
+    });
+  });
+
+  return fuzzy;
 }
 
 /**
@@ -149,13 +171,28 @@ export function parseDebutDisplay(
   let episodeNumber: number | null = null;
   let chronologicalRank = 9999;
 
-  // 1. Check if raw contains explicit episode pattern e.g. "Romance Dawn (Ep. 1)" or "Episode 45" or "Ep. 10"
-  const epMatch = raw.match(/(?:ep\.?|episode)\s*(\d+)/i);
+  // 1. Check if raw contains explicit episode pattern e.g. "Chapter 801 / Episode 756", "Episode 45", "Ep. 10"
+  const combinedText = `${raw} ${explicitArc}`.trim();
+  const epMatch = combinedText.match(/(?:ep\.?|episode)\s*(\d+)/i);
   if (epMatch) {
     episodeNumber = parseInt(epMatch[1], 10);
   }
 
-  // 2. Check if raw has parenthetical format: e.g. "Chapter 1 (Romance Dawn)" or "Romance Dawn (Ep. 1)"
+  // 2. Check if raw or explicitArc contains a Chapter number e.g. "Chapter 929", "Ch. 1"
+  const rawChMatch = combinedText.match(/(?:chapter|ch\.?)\s*(\d+)/i);
+  if (rawChMatch) {
+    const chNum = parseInt(rawChMatch[1], 10);
+    const converted = chapterToEpisode(chNum);
+    if (!arcName || arcName === 'Unknown') {
+      arcName = converted.arcName || `Chapter ${chNum}`;
+    }
+    if (episodeNumber === null) {
+      episodeNumber = converted.episode;
+    }
+    chronologicalRank = episodeNumber !== null ? episodeNumber : (converted.arcOrder || 9999);
+  }
+
+  // 3. Check if raw has parenthetical format: e.g. "Chapter 1 (Romance Dawn)" or "Romance Dawn (Ep. 1)"
   const parenMatch = raw.match(/^(.*?)\s*\((.*?)\)$/);
   if (parenMatch) {
     const part1 = parenMatch[1].trim();
@@ -166,54 +203,37 @@ export function parseDebutDisplay(
 
     if (arcInPart1) {
       arcName = arcInPart1.name;
-      chronologicalRank = arcInPart1.order;
+      if (chronologicalRank === 9999) chronologicalRank = arcInPart1.startEpisode;
+      if (episodeNumber === null) episodeNumber = arcInPart1.startEpisode;
     } else if (arcInPart2) {
       arcName = arcInPart2.name;
-      chronologicalRank = arcInPart2.order;
-    }
-
-    const chMatch = (part1 + ' ' + part2).match(/(?:chapter|ch\.?)\s*(\d+)/i);
-    if (chMatch && episodeNumber === null) {
-      const chNum = parseInt(chMatch[1], 10);
-      const converted = chapterToEpisode(chNum);
-      episodeNumber = converted.episode;
-      if (!arcName && converted.arcName) {
-        arcName = converted.arcName;
-        chronologicalRank = converted.arcOrder || 9999;
-      }
+      if (chronologicalRank === 9999) chronologicalRank = arcInPart2.startEpisode;
+      if (episodeNumber === null) episodeNumber = arcInPart2.startEpisode;
     }
   }
 
-  // 3. Match known Arc by name or alias
-  if (!arcName) {
-    const directArc = findArcByName(raw);
-    if (directArc) {
-      arcName = directArc.name;
-      chronologicalRank = directArc.order;
-      if (episodeNumber === null) {
-        episodeNumber = directArc.startEpisode;
-      }
-    }
-  } else {
+  // 4. Match known Arc by name or alias if arcName is still not normalized
+  if (arcName) {
     const arcObj = findArcByName(arcName);
     if (arcObj) {
       arcName = arcObj.name;
-      chronologicalRank = arcObj.order;
       if (episodeNumber === null) {
         episodeNumber = arcObj.startEpisode;
       }
+      if (chronologicalRank === 9999) {
+        chronologicalRank = episodeNumber !== null ? episodeNumber : arcObj.startEpisode;
+      }
     }
-  }
-
-  // 4. If raw contains a Chapter number
-  if (!arcName || episodeNumber === null) {
-    const rawChMatch = raw.match(/(?:chapter|ch\.?)\s*(\d+)/i) || raw.match(/^(\d+)$/);
-    if (rawChMatch) {
-      const chNum = parseInt(rawChMatch[1], 10);
-      const converted = chapterToEpisode(chNum);
-      if (!arcName) arcName = converted.arcName || `Chapter ${chNum}`;
-      if (episodeNumber === null) episodeNumber = converted.episode;
-      if (chronologicalRank === 9999) chronologicalRank = converted.arcOrder || 9999;
+  } else {
+    const directArc = findArcByName(raw);
+    if (directArc) {
+      arcName = directArc.name;
+      if (episodeNumber === null) {
+        episodeNumber = directArc.startEpisode;
+      }
+      if (chronologicalRank === 9999) {
+        chronologicalRank = episodeNumber !== null ? episodeNumber : directArc.startEpisode;
+      }
     }
   }
 
@@ -223,22 +243,24 @@ export function parseDebutDisplay(
       (a) => episodeNumber! >= a.startEpisode && episodeNumber! <= a.endEpisode
     );
     if (arcForEp) {
-      chronologicalRank = arcForEp.order;
+      chronologicalRank = episodeNumber;
       if (!arcName || arcName === 'Unknown') arcName = arcForEp.name;
+    } else {
+      chronologicalRank = episodeNumber;
     }
   }
 
   // 6. Clean fallback
   if (!arcName || arcName === 'Unknown Arc') {
     if (/^chapter\s*\d+/i.test(raw)) {
-      arcName = 'Unknown Arc';
+      arcName = raw;
     } else {
       arcName = raw || 'Unknown';
     }
   }
 
-  // Use episode number as fine-grained ranking if available
-  const effectiveRank = episodeNumber !== null ? episodeNumber : chronologicalRank * 100;
+  // Final chronological rank is episode number if available
+  const effectiveRank = episodeNumber !== null ? episodeNumber : chronologicalRank;
   const episodeText = episodeNumber !== null ? `Ep. ${episodeNumber}` : null;
 
   return {

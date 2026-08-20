@@ -78,14 +78,21 @@ function testDebutComparison() {
     throw new Error(`Expected 'correct', got '${compSameArc.firstAppearance.status}'`);
   }
 
-  // Test 2: Different debut arc (Kaido Dressrosa vs Luffy Romance Dawn)
-  const compDiffArc = compareCharacters(charKaido, charLuffy);
-  console.log('Test 2 (Kaido guess vs Luffy target - Different Arc):', compDiffArc.firstAppearance);
-  if (compDiffArc.firstAppearance.status !== 'incorrect') {
-    throw new Error(`Expected 'incorrect', got '${compDiffArc.firstAppearance.status}'`);
+  // Test 2: Target is earlier (Kaido guess vs Luffy target)
+  const compEarlierTarget = compareCharacters(charKaido, charLuffy);
+  console.log('Test 2 (Kaido guess vs Luffy target - Target is earlier):', compEarlierTarget.firstAppearance);
+  if (compEarlierTarget.firstAppearance.status !== 'lower') {
+    throw new Error(`Expected 'lower', got '${compEarlierTarget.firstAppearance.status}'`);
   }
 
-  console.log('SUCCESS: All Debut Arc tests passed! Same arc turns green (correct), different turns red (incorrect).');
+  // Test 3: Target is later (Luffy guess vs Kaido target)
+  const compLaterTarget = compareCharacters(charLuffy, charKaido);
+  console.log('Test 3 (Luffy guess vs Kaido target - Target is later):', compLaterTarget.firstAppearance);
+  if (compLaterTarget.firstAppearance.status !== 'higher') {
+    throw new Error(`Expected 'higher', got '${compLaterTarget.firstAppearance.status}'`);
+  }
+
+  console.log('SUCCESS: All Debut Arc & Timeline tests passed! Same arc turns green (correct), earlier target turns red with LOWER, later target turns red with HIGHER.');
 }
 
 testDebutComparison();

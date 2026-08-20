@@ -130,10 +130,13 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
     attr: { status: string; displayValue: string },
     colIdx: number,
     isLatest: boolean,
-    firstArc?: string | null
+    firstArc?: string | null,
+    firstAppearance?: string | null
   ) => {
-    const debut = parseDebutDisplay(attr.displayValue, firstArc);
+    const debut = parseDebutDisplay(firstAppearance || attr.displayValue, firstArc);
     const displayArc = debut.arcName !== 'Unknown' ? debut.arcName : (attr.displayValue || 'Unknown');
+    const isHigher = attr.status === 'higher' || attr.status === 'later';
+    const isLower = attr.status === 'lower' || attr.status === 'earlier';
 
     return (
       <div
@@ -143,6 +146,23 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
         <div className="font-extrabold text-[11.5px] text-center leading-tight drop-shadow-sm line-clamp-2 px-0.5">
           {displayArc}
         </div>
+        {debut.episodeText && (
+          <div className="text-[9.5px] opacity-90 font-bold text-center mt-0.5 leading-tight text-amber-200">
+            ({debut.episodeText})
+          </div>
+        )}
+        {isHigher && (
+          <div className="flex items-center text-[9.5px] font-black text-amber-200 mt-0.5 animate-bounce">
+            <ArrowUp className="w-3 h-3 stroke-[3]" />
+            <span>HIGHER</span>
+          </div>
+        )}
+        {isLower && (
+          <div className="flex items-center text-[9.5px] font-black text-amber-200 mt-0.5 animate-bounce">
+            <ArrowDown className="w-3 h-3 stroke-[3]" />
+            <span>LOWER</span>
+          </div>
+        )}
       </div>
     );
   };
@@ -231,7 +251,7 @@ export default function ComparisonTable({ guesses, theme = 'dark' }: ComparisonT
                 <td>{renderNumericCell(g.height, 9, isLatest)}</td>
 
                 {/* 10. Debut */}
-                <td>{renderDebutCell(g.firstAppearance, 10, isLatest, g.character?.first_arc)}</td>
+                <td>{renderDebutCell(g.firstAppearance, 10, isLatest, g.character?.first_arc, g.character?.first_appearance)}</td>
 
                 {/* 11. Origin */}
                 <td>{renderTextCell(g.origin, 11, isLatest)}</td>
